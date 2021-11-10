@@ -1,0 +1,2 @@
+class EndOfBNXFileException(Exception):
+    pass
