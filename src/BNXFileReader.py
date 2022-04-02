@@ -16,7 +16,7 @@ class BNXFileReader:
         while self.filePointer.readline()[0] == "#":
             lineCounter += 1
             lastLine = self.filePointer.tell()
-        print("actual data starting at line: " + str(lineCounter))
+        #print("actual data starting at line: " + str(lineCounter))
         self.filePointer.seek(lastLine)
 
     def getNextMolecule(self) -> Molecule:

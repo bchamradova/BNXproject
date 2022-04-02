@@ -35,6 +35,8 @@ class Molecule:
             point = self.lineEquation.getCoordinatesInDistanceFromFirstPoint(pixelDistance)
             markX = point[0]
             markY = point[1]
+            if(markY == 8192):
+                continue
             fluorescentMark = FluorescentMark(markX, markY, pixelDistance)
             self.addFluorescentMark(fluorescentMark)
 
@@ -48,6 +50,7 @@ class Molecule:
             print(str(self.endY) + " " + str(self.startY))
             print(str(self.endFOV) + " " + str(self.startFOV))
             return False
+
 
     def __str__(self) -> str:
         marksString = ""
