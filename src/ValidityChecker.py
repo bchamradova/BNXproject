@@ -1,15 +1,11 @@
 import math
 
-import numpy as np
-
-from src.Molecule import Molecule
 from src.FluorescentMarkImageAnalyzer import FluorescentMarkImageAnalyzer
 from src.BNXFileReader import BNXFileReader
 from src.Exception.EndOfBNXFileException import EndOfBNXFileException
 from src.GraphVisualizer import GraphVisualizer
 from src.FileToImageResult import FileToImageResultWithBounds, FileToImageResultWithRanges
-from src.LatexFormatter import LatexHelper
-
+from src.LocalMaximaHelper import LocalMaximaHelper
 
 class ValidityChecker:
 
@@ -26,20 +22,20 @@ class ValidityChecker:
     def getDistanceBetweenCenterAndMaximum(self, surroundingPixelValues):
         centerIndex = int(len(surroundingPixelValues) / 2)
         maxValue = 0
-        maxIndeces = (0, 0)
+        maxIndices = (0, 0)
         for i in range(len(surroundingPixelValues)):
             for j in range(len(surroundingPixelValues)):
                 if surroundingPixelValues[i][j] > maxValue:
                     maxValue = surroundingPixelValues[i][j]
-                    maxIndeces = (i, j)
-        return math.sqrt((maxIndeces[0] - centerIndex) ** 2 + (maxIndeces[1] - centerIndex) ** 2)
+                    maxIndices = (i, j)
+        return math.sqrt((maxIndices[0] - centerIndex) ** 2 + (maxIndices[1] - centerIndex) ** 2)
 
     def getFileToImageStatistics(self, BNXFilename: str, imageFilename: str, closeSurroundings=3, minValue=0):
         fileReader = BNXFileReader(BNXFilename)
         fileReader.open()
 
         imageAnalyzer = FluorescentMarkImageAnalyzer(imageFilename)
-        imageAnalyzer.open()
+        #imageAnalyzer.open()
 
         correctCount = 0
         incorrectCount = 0
@@ -57,7 +53,6 @@ class ValidityChecker:
                 continue
 
             for fluorescentMark in molecule.fluorescentMarks:
-
                 # todo check molecules interfering
                 values = imageAnalyzer.getFluorescentMarkSurroundingValues(fluorescentMark, closeSurroundings)
 
@@ -68,7 +63,6 @@ class ValidityChecker:
                     correctCount += 1
 
                 else:
-
                     incorrectCount += 1
                     distance = self.getDistanceBetweenCenterAndMaximum(values)
                     distanceSum += distance
@@ -119,7 +113,7 @@ class ValidityChecker:
         fileReader.open()
 
         imageAnalyzer = FluorescentMarkImageAnalyzer(imageFilename)
-        imageAnalyzer.open()
+        #imageAnalyzer.open()
 
         for i in range(5):
             try:
@@ -133,24 +127,22 @@ class ValidityChecker:
             gv = GraphVisualizer()
             gv.showComparedImageAndBnxValues(pixelValuesOnLine,
                                              imageAnalyzer.getPositionedFluorescentMarkValues(molecule),
-                                             self.getPositionedLocalMaximaInList(pixelValuesOnLine))
+                                             LocalMaximaHelper.getPositionedLocalMaximaInList(pixelValuesOnLine))
 
             gv.showComparedInterpolatedValues(pixelValuesOnLine,
                                               interpolatedPixelValuesOnLine)
 
             gv.showComparedImageAndBnxValues(interpolatedPixelValuesOnLine,
                                              imageAnalyzer.getPositionedInterpolatedFluorescentMarkValues(molecule),
-                                             self.getPositionedLocalMaximaInList(interpolatedPixelValuesOnLine))
+                                             LocalMaximaHelper.getPositionedLocalMaximaInList(interpolatedPixelValuesOnLine))
 
     def getImageToFileStatistics(self, BNXFilename: str, imageFilename: str):
         fileReader = BNXFileReader(BNXFilename)
         fileReader.open()
 
         imageAnalyzer = FluorescentMarkImageAnalyzer(imageFilename)
-        imageAnalyzer.open()
+        #imageAnalyzer.open()
 
-
-        #lowerBound =
         for lowerBound in range(0,600,50):
             maxLengthDifference = 0
             lengthDifferenceSum = 0
@@ -167,7 +159,7 @@ class ValidityChecker:
 
                 pixelValuesOnLine = imageAnalyzer.getPixelValuesOnMoleculeLine(molecule)
 
-                maximaMarksCount = len(self.getLocalMaximaInList(pixelValuesOnLine, lowerBound))
+                maximaMarksCount = len(LocalMaximaHelper.getLocalMaximaInList(pixelValuesOnLine, lowerBound))
                 bnxMarksCount = len(imageAnalyzer.getFluorescentMarkValuesBiggerThan(molecule, lowerBound))
                 lengthDifference = abs(bnxMarksCount - maximaMarksCount)
                 lengthDifferenceSum += lengthDifference
@@ -187,18 +179,3 @@ class ValidityChecker:
             print("max difference: " + str(maxLengthDifference))
             print("average difference: " + str(lengthDifferenceSum / count))
             print("same length count: " + str(sameLengthCount) + " of total: " + str(count))
-
-    def getLocalMaximaInList(self, list, lowestAcceptableValue=0):
-        return [value for index, value in enumerate(list)
-                if ((index == 0) or (list[index - 1] <= value))
-                and ((index == len(list) - 1) or (value > list[index + 1])) and (value >= lowestAcceptableValue)]
-
-    def getPositionedLocalMaximaInList(self, list, lowestAcceptableValue=0):
-        maximas = []
-        for index, value in enumerate(list):
-            if ((index == 0) or (list[index - 1] <= value)) and (
-                    (index == len(list) - 1) or (value > list[index + 1])) and (value >= lowestAcceptableValue):
-                maximas.append(value)
-            else:
-                maximas.append(None)
-        return maximas

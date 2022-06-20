@@ -8,6 +8,7 @@ class FluorescentMarkImageAnalyzer:
 
     def __init__(self, filename: str):
         self.filename: str = filename
+        self.open()
 
     def open(self) -> None:
         self.image = Image.open(self.filename)
@@ -35,7 +36,6 @@ class FluorescentMarkImageAnalyzer:
     def getPositionedFluorescentMarkValues(self, molecule: Molecule):
         marks = []
         count = 0
-        #1 difference
         for y in range(molecule.totalStartY, molecule.totalEndY):
             if(y in [mark.posY for mark in molecule.fluorescentMarks]):
                 marks.append(self.getPixelValue(molecule.fluorescentMarks[count].posX, molecule.fluorescentMarks[count].posY))

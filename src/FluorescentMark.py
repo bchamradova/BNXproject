@@ -1,9 +1,11 @@
 class FluorescentMark:
 
-    def __init__(self, posX: int, posY: int, distance: int):
+    def __init__(self, posX: int, posY: int, distance: int, BNXIntensity: float, SNR: float):
         self.posX = posX
         self.posY = posY
         self.distance = distance
+        self.BNXIntensity = BNXIntensity
+        self.SNR = SNR
 
     def getCoordinates(self) -> (int, int):
         return (self.posX, self.posY)

@@ -26,10 +26,12 @@ class BNXFileReader:
         molecule = self.getMoleculeFromLine(moleculeLine)
         fluorescentMarksLine = self.filePointer.readline()
         fluorescentMarks = self.getFluorescentMarkDistancesFromLine(fluorescentMarksLine)
-        molecule.createFluorescentMarksFromArray(fluorescentMarks)
-        # Q1,2 lines skipped for now
-        self.filePointer.readline()
-        self.filePointer.readline()
+        intensitiesLine = self.filePointer.readline()
+        intensities = self.getFloatsFromLine(intensitiesLine)
+        SNRsLine = self.filePointer.readline()
+        SNRs = self.getFloatsFromLine(SNRsLine)
+        molecule.createFluorescentMarksFromArray(fluorescentMarks, SNRs, intensities)
+
         return molecule
 
     def getMoleculeFromLine(self, line: str) -> Molecule:
@@ -45,7 +47,15 @@ class BNXFileReader:
         lineAttributes = self.parseLine(line)
         # delete 1 from the beginning of line
         lineAttributes.pop(0)
+        # delete lastMark
+        lineAttributes.pop()
         return [int(value) for value in lineAttributes]
+
+    def getFloatsFromLine(self, line:str):
+        lineAttributes = self.parseLine(line)
+        # delete Q from the beginning of line
+        lineAttributes.pop(0)
+        return [float(value) for value in lineAttributes]
 
     def parseLine(self, line):
         lineAttributes = line.strip().split(self.SEPARATOR)

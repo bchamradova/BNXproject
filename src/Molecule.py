@@ -29,15 +29,15 @@ class Molecule:
     def addFluorescentMark(self, fluorescentMark: FluorescentMark) -> None:
         self.fluorescentMarks.append(fluorescentMark)
 
-    def createFluorescentMarksFromArray(self, marks) -> None:
-        for nucleotideDistance in marks:
+    def createFluorescentMarksFromArray(self, marks, intensities, SNRs) -> None:
+        for index,nucleotideDistance in enumerate(marks):
             pixelDistance = int(nucleotideDistance / self.PIXEL_TO_NUCLEOTIDE_RATIO)
             point = self.lineEquation.getCoordinatesInDistanceFromFirstPoint(pixelDistance)
             markX = point[0]
             markY = point[1]
             if(markY == 8192):
                 continue
-            fluorescentMark = FluorescentMark(markX, markY, pixelDistance)
+            fluorescentMark = FluorescentMark(markX, markY, pixelDistance, intensities[index], SNRs[index])
             self.addFluorescentMark(fluorescentMark)
 
     def isMoleculeLengthCorrect(self) -> bool:
