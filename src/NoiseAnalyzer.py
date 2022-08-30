@@ -5,31 +5,36 @@ from matplotlib import pyplot as plt
 
 from src.GraphVisualizer import GraphVisualizer
 from src.Molecule import Molecule
-
+from scipy.stats import norm
 
 class NoiseAnalyzer:
     IMAGE_WIDTH = 1024
     IMAGE_HEIGHT = 8192
+    LIMIT = 300
+    
+    def __init__(self, filename):
+        self.imageFilename = filename
+        self.imagePixelValues = self.getAllPixelValuesIndexed()
 
-    def getAllPixelValues(self, imageFilename: str):
-        image = Image.open(imageFilename)
+    def getAllPixelValues(self):
+        image = Image.open(self.imageFilename)
         values = []
         for x in range(self.IMAGE_WIDTH):
             for y in range(self.IMAGE_HEIGHT):
                 values.append(image.getpixel((x, y)))
         return values
 
-    def getPixelValuesInRange(self, imageFilename: str, xFrom: int, xTo: int, yFrom: int, yTo: int):
-        image = Image.open(imageFilename)
+    def getPixelValuesInRange(self, xFrom: int, xTo: int, yFrom: int, yTo: int):
+        image = Image.open(self.imageFilename)
         values = []
         for x in range(xFrom, xTo):
             for y in range(yFrom, yTo):
                 values.append(image.getpixel((x, y)))
         return values
 
-    def getAllPixelValuesIndexed(self, imageFilename: str):
+    def getAllPixelValuesIndexed(self):
         start = time.time()
-        image = Image.open(imageFilename)
+        image = Image.open(self.imageFilename)
         values = [[0 for i in range(self.IMAGE_WIDTH)] for i in range(self.IMAGE_HEIGHT)]
         for x in range(self.IMAGE_WIDTH):
             for y in range(self.IMAGE_HEIGHT):
@@ -51,48 +56,76 @@ class NoiseAnalyzer:
                 maxIndex = value - minValue
 
         # print("mean: " + str(maxIndex + minValue))
-        return [value / len(values) for value in valueCounts[0:300]]
+        return [value / len(values) for value in valueCounts[0:NoiseAnalyzer.LIMIT]]
 
-    def getFOVValuesCounts(self, imageFilename: str):
+    def getFOVValuesCounts(self):
         graphVisualizer = GraphVisualizer()
         for fov in range(4):
             values = self.getValuesCounts(
-                self.getPixelValuesInRange(imageFilename, 0, self.IMAGE_WIDTH, fov * Molecule.FOV_DIMENSION,
+                self.getPixelValuesInRange(0, self.IMAGE_WIDTH, fov * Molecule.FOV_DIMENSION,
                                            (fov + 1) * Molecule.FOV_DIMENSION))
             graphVisualizer.gaussianDistribution(values, title='distribution in FOV' + str(fov + 1))
 
-    def getFullValuesCounts(self, imageFilename: str):
+    def getFullValuesCounts(self):
         graphVisualizer = GraphVisualizer()
-        values = self.getAllPixelValues(imageFilename)
-        graphVisualizer.compareHistogramToNormalDistribution([pixel for pixel in values if pixel < 300])
+        values = self.getAllPixelValues()
+        graphVisualizer.compareHistogramToNormalDistribution([pixel for pixel in values if pixel < NoiseAnalyzer.LIMIT])
         graphVisualizer.gaussianDistribution(self.getValuesCounts(values))
 
-    def getColumnValuesMeans(self, imageFilename):
+    def getDeviation(self):
+        values = self.getAllPixelValues()
+        mu, std = norm.fit([pixel for pixel in values if pixel < NoiseAnalyzer.LIMIT])
+        return std
+
+    def getColumnValuesMeans(self):
         means = []
-        pixelValues = self.getAllPixelValuesIndexed(imageFilename)
         for column in range(self.IMAGE_WIDTH):
-            values = []
-            for row in range(self.IMAGE_HEIGHT):
-                values.append(pixelValues[row][column])
-            counts = self.getValuesCounts(values)
-            mean = counts.index(max(counts))
-            # print(str(mean))
-            means.append(mean)
+            means.append(self.getColumnMeanAndDeviation(column)[0])
         graphVisualizer = GraphVisualizer()
         graphVisualizer.showMeansValues(means, column=1)
         return means
 
-    def getRowValuesMeans(self, imageFilename):
+    def getRowValuesMeans(self):
         means = []
-        pixelValues = self.getAllPixelValuesIndexed(imageFilename)
         for row in range(self.IMAGE_HEIGHT):
-            counts = self.getValuesCounts(pixelValues[row])
-            mean = counts.index(max(counts))
-            # print(str(mean))
-            means.append(mean)
+            means.append(self.getRowMeanAndDeviation(row)[0])
         graphVisualizer = GraphVisualizer()
         graphVisualizer.showMeansValues(means, column=0)
         return means
 
-    def removeOutliers(self, values):
-        pass
+    def getColumnValuesDeviations(self):
+        deviations = []
+        for column in range(self.IMAGE_WIDTH):
+            deviations.append(self.getColumnMeanAndDeviation(column)[1])
+        graphVisualizer = GraphVisualizer()
+        graphVisualizer.showMeansValues(deviations, column=1)
+        return deviations
+
+    def getRowValuesDeviations(self):
+        deviations = []
+        for row in range(self.IMAGE_HEIGHT):
+            deviations.append(self.getRowMeanAndDeviation(row)[1])
+        graphVisualizer = GraphVisualizer()
+        graphVisualizer.showMeansValues(deviations, column=0)
+        return deviations
+
+    def getColumnMeanAndDeviation(self, column):
+        graphVisualizer = GraphVisualizer()
+        values = []
+        for row in range(self.IMAGE_HEIGHT):
+            values.append(self.imagePixelValues[row][column])
+        counts = self.getValuesCounts(values)
+        mean = counts.index(max(counts))
+        mu, std = norm.fit([pixel for pixel in values if pixel < NoiseAnalyzer.LIMIT])
+        # print(str(mean))
+        if std > 40:
+            graphVisualizer.compareHistogramToNormalDistribution(
+                [pixel for pixel in values if pixel < NoiseAnalyzer.LIMIT])
+        return mu, std
+
+    def getRowMeanAndDeviation(self, row):
+        counts = self.getValuesCounts(self.imagePixelValues[row])
+        mean = counts.index(max(counts))
+        mu, std = norm.fit([pixel for pixel in self.imagePixelValues[row] if pixel < NoiseAnalyzer.LIMIT])
+        # print(str(mean))
+        return mu, std

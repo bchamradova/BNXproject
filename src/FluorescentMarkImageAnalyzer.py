@@ -1,7 +1,10 @@
+import sys
+
 from PIL import Image
 import numpy as np
 from src.Molecule import Molecule
 from src.FluorescentMark import FluorescentMark
+from src.NoiseAnalyzer import NoiseAnalyzer
 
 
 class FluorescentMarkImageAnalyzer:
@@ -12,6 +15,7 @@ class FluorescentMarkImageAnalyzer:
 
     def open(self) -> None:
         self.image = Image.open(self.filename)
+        print('mode', self.image.mode)
 
     def getPixelValue(self, x: int, y: int) -> int:
         return self.image.getpixel((x, y))
@@ -77,3 +81,22 @@ class FluorescentMarkImageAnalyzer:
             curveValues.append(mean)
 
         return curveValues
+
+    def getSNRs(self):
+        SNRs = []
+        maxSNR = 0
+        sum= count = 0
+        minSNR = sys.maxsize
+        na = NoiseAnalyzer(self.filename)
+        deviation = na.getDeviation()
+        for x in range(NoiseAnalyzer.IMAGE_WIDTH):
+            for y in range(NoiseAnalyzer.IMAGE_HEIGHT):
+                SNR = self.getPixelValue(x, y) / deviation
+                SNRs.append(SNR)
+                if SNR > maxSNR:
+                    maxSNR = SNR
+                if SNR < minSNR:
+                    minSNR = SNR
+        print(maxSNR)
+        print(minSNR)
+        return SNRs
