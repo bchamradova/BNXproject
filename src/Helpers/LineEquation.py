@@ -1,5 +1,4 @@
 import math
-from typing import List
 
 from src.Exception.SlopeException import SlopeException
 
@@ -23,7 +22,7 @@ class LineEquation:
         return y - self.scope * x
 
     def getXCoordinateFromY(self, y: int) -> int:
-        if (self.scope == 0):
+        if self.scope == 0:
             raise SlopeException("cannot get x coordinate from horizontal line" + str(self.point1) + str(self.point2))
         return int(round((y - self.intercept) / self.scope))
 
@@ -31,7 +30,7 @@ class LineEquation:
         D = math.sqrt((self.point2[0] - self.point1[0]) ** 2 + (self.point1[1] - self.point2[1]) ** 2)
         x = self.point1[0] + (distance / D) * (self.point2[0] - self.point1[0])
         y = self.point1[1] + (distance / D) * (self.point2[1] - self.point1[1])
-        return (int(round(x)), int(round(y)))
+        return int(round(x)), int(round(y))
 
     def getDistanceBetweenTwoPoints(self, point1: (int, int), point2: (int, int)) -> int:
         return int(math.sqrt((point2[0] - point1[0]) ** 2 + (point2[1] - point1[1]) ** 2))

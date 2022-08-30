@@ -1,5 +1,5 @@
-from src.FluorescentMarkImageAnalyzer import FluorescentMarkImageAnalyzer
-from src.NoiseAnalyzer import NoiseAnalyzer as na
+from src.ImageAnalysis.FluorescentMarkImageAnalyzer import FluorescentMarkImageAnalyzer
+from src.ImageAnalysis.NoiseAnalyzer import NoiseAnalyzer as na
 
 
 class NormalizedImageAnalyzer(FluorescentMarkImageAnalyzer):
@@ -29,15 +29,15 @@ class NormalizedImageAnalyzer(FluorescentMarkImageAnalyzer):
             return self.subtractMeans(row=rowMeans, column=columnMeans)
 
     def subtractMeans(self, row=None, column=None):
-        normalizedPixelValues = [[0 for i in range(na.IMAGE_WIDTH)] for i in range(na.IMAGE_HEIGHT)]
+        normalizedPixelValues = [[0 for _ in range(na.IMAGE_WIDTH)] for _ in range(na.IMAGE_HEIGHT)]
         for x in range(na.IMAGE_WIDTH):
             for y in range(na.IMAGE_HEIGHT):
-                #print(x,y)
+                # print(x,y)
                 originalValue = super().getPixelValue(x, y)
-                if (not row is None) and (not column is None):
+                if (row is not None) and (column is not None):
                     normalizedPixelValues[y][x] = originalValue - (column[x] + row[y]) / 2
-                elif not row is None:
+                elif row is not None:
                     normalizedPixelValues[y][x] = originalValue - row[y]
-                elif not column is None:
+                elif column is not None:
                     normalizedPixelValues[y][x] = originalValue - column[x]
         return normalizedPixelValues

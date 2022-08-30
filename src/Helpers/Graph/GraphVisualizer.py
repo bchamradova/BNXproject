@@ -3,16 +3,16 @@ import numpy as np
 from scipy.stats import norm
 
 
-from src.FluorescentMarkImageAnalyzer import FluorescentMarkImageAnalyzer
-
 class GraphVisualizer:
 
     def showComparedImageAndBnxValues(self, imageData, bnxData, localMaxima):
-        plt.plot(imageData, linestyle='solid',zorder=1)
-        #plt.ylim([0,1000])
-        #plt.yticks([0,200,400,600,800,1000])
-        localMaxima = plt.scatter( [i for i in range(len(localMaxima))], localMaxima, marker='o', color='orange', alpha=0.5, zorder=2)
-        bnxMarks = plt.scatter([i for i in range(len(bnxData))], bnxData, marker='x', color='purple', alpha=0.8, zorder=3)
+        plt.plot(imageData, linestyle='solid', zorder=1)
+        # plt.ylim([0,1000])
+        # plt.yticks([0,200,400,600,800,1000])
+        localMaxima = plt.scatter([i for i in range(len(localMaxima))], localMaxima, marker='o', color='orange',
+                                  alpha=0.5, zorder=2)
+        bnxMarks = plt.scatter([i for i in range(len(bnxData))], bnxData, marker='x', color='purple', alpha=0.8,
+                               zorder=3)
         plt.legend((localMaxima, bnxMarks), ('local maxima', 'BNX marks position'), loc=2)
         plt.show()
 
@@ -26,30 +26,30 @@ class GraphVisualizer:
         for surroundingsRange, plotData in graphDataIndexedBySurroundings.items():
             plt.plot(plotData.lowerBounds, plotData.resultRatios)
 
-        plt.xlabel("Nejnižší přijatelná hodnota")
-        plt.ylabel("Poměr validních fluorescenčních značek")
-        #plt.legend([key for key, item in graphDataIndexedBySurroundings.items()])
-        plt.legend(['3x3','5x5','7x7'])
+        plt.xlabel('Nejnižší přijatelná hodnota')
+        plt.ylabel('Poměr validních fluorescenčních značek')
+        # plt.legend([key for key, item in graphDataIndexedBySurroundings.items()])
+        plt.legend(['3x3', '5x5', '7x7'])
         plt.show()
 
     def showFileToImageStatisticsComparedByLowerBounds(self, graphDataIndexedByUpperBounds):
         for upperBound, plotData in graphDataIndexedByUpperBounds.items():
             plt.plot(plotData.surroundingsRanges, plotData.resultRatios)
 
-        plt.xlabel("size of checked surroundings")
-        plt.ylabel("share of valid marks")
+        plt.xlabel('size of checked surroundings')
+        plt.ylabel('share of valid marks')
         plt.legend([key for key, item in graphDataIndexedByUpperBounds.items()])
         plt.show()
 
-    def x(self):
-        bounds = [0,50,100,150,200,250,300,350,400,450,500,550]
-        diffAvg = [53.1,53.1,53.1,53.1,29.05,6.47,2.1,1.41,1.19,1,0.82,0.72]
+    def filteredValuesComparedGraph(self):
+        bounds = [0, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550]
+        diffAvg = [53.1, 53.1, 53.1, 53.1, 29.05, 6.47, 2.1, 1.41, 1.19, 1, 0.82, 0.72]
         plt.plot(bounds, diffAvg)
-        plt.xlabel("Nejnižší přijatelná hodnota")
-        plt.ylabel("Průměrný rozdíl v počtu \n fluorescenčních značek molekuly")
+        plt.xlabel('Nejnižší přijatelná hodnota')
+        plt.ylabel('Průměrný rozdíl v počtu \n fluorescenčních značek molekuly')
         plt.show()
 
-    def gaussianDistribution(self, data, title = 'pixel distribution'):
+    def gaussianDistribution(self, data, title='pixel distribution'):
         plt.plot(data)
         plt.xlabel('pixel value')
         plt.ylabel('probability')
@@ -69,20 +69,12 @@ class GraphVisualizer:
         plt.plot(x, p)
         plt.show()
 
-    def showMeansValues(self, rowData, column = 0):
+    def showMeansValues(self, rowData, column=0):
         plt.plot(rowData)
-        if(column != 1):
+        if column != 1:
             plt.xlabel('row id')
             plt.ylabel('mean value')
         else:
             plt.xlabel('column id')
             plt.ylabel('mean value')
         plt.show()
-
-
-
-
-
-
-
-

@@ -1,17 +1,16 @@
 import time
 from PIL import Image
-import numpy as np
-from matplotlib import pyplot as plt
 
-from src.GraphVisualizer import GraphVisualizer
-from src.Molecule import Molecule
+from src.Helpers.Graph.GraphVisualizer import GraphVisualizer
+from src.Model.Molecule import Molecule
 from scipy.stats import norm
+
 
 class NoiseAnalyzer:
     IMAGE_WIDTH = 1024
     IMAGE_HEIGHT = 8192
     LIMIT = 300
-    
+
     def __init__(self, filename):
         self.imageFilename = filename
         self.imagePixelValues = self.getAllPixelValuesIndexed()
@@ -35,7 +34,7 @@ class NoiseAnalyzer:
     def getAllPixelValuesIndexed(self):
         start = time.time()
         image = Image.open(self.imageFilename)
-        values = [[0 for i in range(self.IMAGE_WIDTH)] for i in range(self.IMAGE_HEIGHT)]
+        values = [[0 for _ in range(self.IMAGE_WIDTH)] for _ in range(self.IMAGE_HEIGHT)]
         for x in range(self.IMAGE_WIDTH):
             for y in range(self.IMAGE_HEIGHT):
                 values[y][x] = (image.getpixel((x, y)))
@@ -46,12 +45,12 @@ class NoiseAnalyzer:
     def getValuesCounts(self, values):
         minValue = 0
         maxValue = max(values)
-        valueCounts = [0 for i in range(maxValue - minValue + 1)]
+        valueCounts = [0 for _ in range(maxValue - minValue + 1)]
         maxValue = 0
         maxIndex = 0
         for value in values:
             valueCounts[value - minValue] += 1
-            if (valueCounts[value - minValue] > maxValue):
+            if valueCounts[value - minValue] > maxValue:
                 maxValue = valueCounts[value - minValue]
                 maxIndex = value - minValue
 

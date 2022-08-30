@@ -1,8 +1,7 @@
-from src.BNXFileReader import BNXFileReader
+from src.BNXFile.BNXFileReader import BNXFileReader
 from src.Exception.EndOfBNXFileException import EndOfBNXFileException
-from src.FluorescentMarkImageAnalyzer import FluorescentMarkImageAnalyzer
-from src.LocalMaximaHelper import LocalMaximaHelper
-from src.NormalizedImageAnalyzer import NormalizedImageAnalyzer
+from src.Helpers.LocalMaximaHelper import LocalMaximaHelper
+from src.ImageAnalysis.NormalizedImageAnalyzer import NormalizedImageAnalyzer
 
 
 class NormalizedImageChecker:
@@ -14,9 +13,9 @@ class NormalizedImageChecker:
         fileReader = BNXFileReader(BNXfilename)
         fileReader.open()
         count = 0
-        maxLengthDifference = [0,0,0]
-        lengthDifferenceSum = [0,0,0]
-        sameLengthCount = [0,0,0]
+        maxLengthDifference = [0, 0, 0]
+        lengthDifferenceSum = [0, 0, 0]
+        sameLengthCount = [0, 0, 0]
         while True:
             try:
                 molecule = fileReader.getNextMolecule()
@@ -25,13 +24,13 @@ class NormalizedImageChecker:
             count += 1
             columnMaximaCount, columnLengthDifference = self.getCountsForMolecule(columnImageAnalyzer, molecule)
             rowMaximaCount, rowLengthDifference = self.getCountsForMolecule(rowImageAnalyzer, molecule)
-            combinedMaximaCount, combindLengthDifference = self.getCountsForMolecule(combinedImageAnalyzer, molecule)
+            combinedMaximaCount, combinedLengthDifference = self.getCountsForMolecule(combinedImageAnalyzer, molecule)
 
             maximaMarksCounts = [columnMaximaCount, rowMaximaCount, combinedMaximaCount]
-            lengthDifferences = [columnLengthDifference, rowLengthDifference, combindLengthDifference]
+            lengthDifferences = [columnLengthDifference, rowLengthDifference, combinedLengthDifference]
 
             for i in range(3):
-                if lengthDifferences[i]>maxLengthDifference[i]:
+                if lengthDifferences[i] > maxLengthDifference[i]:
                     maxLengthDifference[i] = lengthDifferences[i]
                 lengthDifferenceSum[i] += lengthDifferences[i]
                 if lengthDifferences[i] == 0:
@@ -55,4 +54,3 @@ class NormalizedImageChecker:
         lengthDifference = abs(bnxMarksCount - maximaMarksCount)
 
         return maximaMarksCount, lengthDifference
-

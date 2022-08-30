@@ -1,11 +1,12 @@
 import math
 
-from src.FluorescentMarkImageAnalyzer import FluorescentMarkImageAnalyzer
-from src.BNXFileReader import BNXFileReader
+from src.BNXFile.BNXFileReader import BNXFileReader
 from src.Exception.EndOfBNXFileException import EndOfBNXFileException
-from src.GraphVisualizer import GraphVisualizer
 from src.FileToImageResult import FileToImageResultWithBounds, FileToImageResultWithRanges
-from src.LocalMaximaHelper import LocalMaximaHelper
+from src.ImageAnalysis.FluorescentMarkImageAnalyzer import FluorescentMarkImageAnalyzer
+from src.Helpers.Graph.GraphVisualizer import GraphVisualizer
+from src.Helpers.LocalMaximaHelper import LocalMaximaHelper
+
 
 class ValidityChecker:
 
@@ -15,7 +16,7 @@ class ValidityChecker:
         maxValue = (max(map(max, surroundingPixelValues)))
         for i in range(centerIndex - centerRadius, centerIndex + centerRadius + 1):
             for j in range(centerIndex - centerRadius, centerIndex + centerRadius + 1):
-                if (surroundingPixelValues[i][j] == maxValue):
+                if surroundingPixelValues[i][j] == maxValue:
                     return True
         return False
 
@@ -35,7 +36,7 @@ class ValidityChecker:
         fileReader.open()
 
         imageAnalyzer = FluorescentMarkImageAnalyzer(imageFilename)
-        #imageAnalyzer.open()
+        # imageAnalyzer.open()
 
         correctCount = 0
         incorrectCount = 0
@@ -56,7 +57,7 @@ class ValidityChecker:
                 # todo check molecules interfering
                 values = imageAnalyzer.getFluorescentMarkSurroundingValues(fluorescentMark, closeSurroundings)
 
-                if (imageAnalyzer.getPixelValue(fluorescentMark.posX, fluorescentMark.posY) < minValue):
+                if imageAnalyzer.getPixelValue(fluorescentMark.posX, fluorescentMark.posY) < minValue:
                     continue
 
                 if self.checkMaximumInCenter(values):
@@ -113,7 +114,7 @@ class ValidityChecker:
         fileReader.open()
 
         imageAnalyzer = FluorescentMarkImageAnalyzer(imageFilename)
-        #imageAnalyzer.open()
+        # imageAnalyzer.open()
 
         for i in range(5):
             try:
@@ -134,16 +135,17 @@ class ValidityChecker:
 
             gv.showComparedImageAndBnxValues(interpolatedPixelValuesOnLine,
                                              imageAnalyzer.getPositionedInterpolatedFluorescentMarkValues(molecule),
-                                             LocalMaximaHelper.getPositionedLocalMaximaInList(interpolatedPixelValuesOnLine))
+                                             LocalMaximaHelper.getPositionedLocalMaximaInList(
+                                                 interpolatedPixelValuesOnLine))
 
     def getImageToFileStatistics(self, BNXFilename: str, imageFilename: str):
         fileReader = BNXFileReader(BNXFilename)
         fileReader.open()
 
         imageAnalyzer = FluorescentMarkImageAnalyzer(imageFilename)
-        #imageAnalyzer.open()
+        # imageAnalyzer.open()
 
-        for lowerBound in range(0,600,50):
+        for lowerBound in range(0, 600, 50):
             maxLengthDifference = 0
             lengthDifferenceSum = 0
             sameLengthCount = 0
@@ -164,9 +166,9 @@ class ValidityChecker:
                 lengthDifference = abs(bnxMarksCount - maximaMarksCount)
                 lengthDifferenceSum += lengthDifference
 
-                if (lengthDifference > maxLengthDifference):
+                if lengthDifference > maxLengthDifference:
                     maxLengthDifference = lengthDifference
-                if (lengthDifference == 0):
+                if lengthDifference == 0:
                     sameLengthCount += 1
 
                 '''print("-                                            -")

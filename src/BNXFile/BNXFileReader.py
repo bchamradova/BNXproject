@@ -1,12 +1,13 @@
-from src.Molecule import Molecule
+from src.Model.Molecule import Molecule
 from src.Exception.EndOfBNXFileException import EndOfBNXFileException
+
 
 class BNXFileReader:
     SEPARATOR = "\t"
 
-    def __init__(self, filename: str, ignoreDifferentFOV = True):
+    def __init__(self, filename: str, ignoreDifferentFOV=True):
         self.filename = filename
-        #todo
+        # todo
         self.ignoreDifferentFOV = ignoreDifferentFOV
 
     def open(self) -> None:
@@ -16,7 +17,7 @@ class BNXFileReader:
         while self.filePointer.readline()[0] == "#":
             lineCounter += 1
             lastLine = self.filePointer.tell()
-        #print("actual data starting at line: " + str(lineCounter))
+        # print("actual data starting at line: " + str(lineCounter))
         self.filePointer.seek(lastLine)
 
     def getNextMolecule(self) -> Molecule:
@@ -51,7 +52,7 @@ class BNXFileReader:
         lineAttributes.pop()
         return [int(value) for value in lineAttributes]
 
-    def getFloatsFromLine(self, line:str):
+    def getFloatsFromLine(self, line: str):
         lineAttributes = self.parseLine(line)
         # delete Q from the beginning of line
         lineAttributes.pop(0)

@@ -8,11 +8,11 @@ class LocalMaximaHelper:
 
     @staticmethod
     def getPositionedLocalMaximaInList(list, lowestAcceptableValue=0):
-        maximas = []
+        maximums = []
         for index, value in enumerate(list):
             if ((index == 0) or (list[index - 1] <= value)) and (
                     (index == len(list) - 1) or (value > list[index + 1])) and (value >= lowestAcceptableValue):
-                maximas.append(value)
+                maximums.append(value)
             else:
-                maximas.append(None)
-        return maximas
+                maximums.append(None)
+        return maximums

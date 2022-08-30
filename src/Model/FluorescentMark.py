@@ -8,7 +8,7 @@ class FluorescentMark:
         self.SNR = SNR
 
     def getCoordinates(self) -> (int, int):
-        return (self.posX, self.posY)
+        return self.posX, self.posY
 
     def __str__(self) -> str:
         return "posX: " + str(self.posX) + " posY: " + str(self.posY) + " distance: " + str(self.distance)

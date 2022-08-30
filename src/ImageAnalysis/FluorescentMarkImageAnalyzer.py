@@ -2,9 +2,9 @@ import sys
 
 from PIL import Image
 import numpy as np
-from src.Molecule import Molecule
-from src.FluorescentMark import FluorescentMark
-from src.NoiseAnalyzer import NoiseAnalyzer
+from src.Model.Molecule import Molecule
+from src.Model.FluorescentMark import FluorescentMark
+from src.ImageAnalysis.NoiseAnalyzer import NoiseAnalyzer
 
 
 class FluorescentMarkImageAnalyzer:
@@ -15,14 +15,13 @@ class FluorescentMarkImageAnalyzer:
 
     def open(self) -> None:
         self.image = Image.open(self.filename)
-        print('mode', self.image.mode)
 
     def getPixelValue(self, x: int, y: int) -> int:
         return self.image.getpixel((x, y))
 
     def getSurroundingValues(self, x: int, y: int, width: int):
         matrixWidth = 2 * width + 1
-        surroundings = [[0 for i in range(matrixWidth)] for j in range(matrixWidth)]
+        surroundings = [[0 for _ in range(matrixWidth)] for _ in range(matrixWidth)]
         startingX = x - width
         startingY = y - width
         for i in range(matrixWidth):
@@ -41,8 +40,9 @@ class FluorescentMarkImageAnalyzer:
         marks = []
         count = 0
         for y in range(molecule.totalStartY, molecule.totalEndY):
-            if(y in [mark.posY for mark in molecule.fluorescentMarks]):
-                marks.append(self.getPixelValue(molecule.fluorescentMarks[count].posX, molecule.fluorescentMarks[count].posY))
+            if y in [mark.posY for mark in molecule.fluorescentMarks]:
+                marks.append(
+                    self.getPixelValue(molecule.fluorescentMarks[count].posX, molecule.fluorescentMarks[count].posY))
                 count += 1
             else:
                 marks.append(None)
@@ -52,8 +52,9 @@ class FluorescentMarkImageAnalyzer:
         marks = []
         count = 0
         for y in range(molecule.totalStartY, molecule.totalEndY):
-            if(y in [mark.posY for mark in molecule.fluorescentMarks]):
-                surroundings = self.getSurroundingValues(molecule.fluorescentMarks[count].posX, molecule.fluorescentMarks[count].posY, 1)
+            if y in [mark.posY for mark in molecule.fluorescentMarks]:
+                surroundings = self.getSurroundingValues(molecule.fluorescentMarks[count].posX,
+                                                         molecule.fluorescentMarks[count].posY, 1)
                 mean = np.matrix(surroundings).mean()
                 marks.append(mean)
                 count += 1
@@ -82,21 +83,3 @@ class FluorescentMarkImageAnalyzer:
 
         return curveValues
 
-    def getSNRs(self):
-        SNRs = []
-        maxSNR = 0
-        sum= count = 0
-        minSNR = sys.maxsize
-        na = NoiseAnalyzer(self.filename)
-        deviation = na.getDeviation()
-        for x in range(NoiseAnalyzer.IMAGE_WIDTH):
-            for y in range(NoiseAnalyzer.IMAGE_HEIGHT):
-                SNR = self.getPixelValue(x, y) / deviation
-                SNRs.append(SNR)
-                if SNR > maxSNR:
-                    maxSNR = SNR
-                if SNR < minSNR:
-                    minSNR = SNR
-        print(maxSNR)
-        print(minSNR)
-        return SNRs
