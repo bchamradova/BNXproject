@@ -1,3 +1,4 @@
+from src import constants
 from src.Model.FluorescentMark import FluorescentMark
 from src.Helpers.LineEquation import LineEquation
 from typing import List
@@ -31,7 +32,7 @@ class Molecule:
 
     def createFluorescentMarksFromArray(self, marks, intensities, SNRs) -> None:
         for index, nucleotideDistance in enumerate(marks):
-            pixelDistance = int(nucleotideDistance / self.PIXEL_TO_NUCLEOTIDE_RATIO)
+            pixelDistance = int(nucleotideDistance / constants.PIXEL_TO_NUCLEOTIDE_RATIO)
             point = self.lineEquation.getCoordinatesInDistanceFromFirstPoint(pixelDistance)
             markX = point[0]
             markY = point[1]
@@ -41,12 +42,12 @@ class Molecule:
             self.addFluorescentMark(fluorescentMark)
 
     def isMoleculeLengthCorrect(self) -> bool:
-        if self.moleculeLength == (self.totalEndY - self.totalStartY + 1) * self.PIXEL_TO_NUCLEOTIDE_RATIO:
+        if self.moleculeLength == (self.totalEndY - self.totalStartY + 1) * constants.PIXEL_TO_NUCLEOTIDE_RATIO:
             return True
         else:
             print(str(self.moleculeLength)
                   + " vs "
-                  + str((self.totalEndY - self.totalStartY + 1) * self.PIXEL_TO_NUCLEOTIDE_RATIO))
+                  + str((self.totalEndY - self.totalStartY + 1) * constants.PIXEL_TO_NUCLEOTIDE_RATIO))
             print(str(self.endY) + " " + str(self.startY))
             print(str(self.endFOV) + " " + str(self.startFOV))
             return False

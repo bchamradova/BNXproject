@@ -16,3 +16,13 @@ class LocalMaximaHelper:
             else:
                 maximums.append(None)
         return maximums
+
+    def checkMaximumInCenter(self, surroundingPixelValues):
+        centerIndex = int(len(surroundingPixelValues) / 2)
+        centerRadius = 1
+        maxValue = (max(map(max, surroundingPixelValues)))
+        for i in range(centerIndex - centerRadius, centerIndex + centerRadius + 1):
+            for j in range(centerIndex - centerRadius, centerIndex + centerRadius + 1):
+                if surroundingPixelValues[i][j] == maxValue:
+                    return True
+        return False

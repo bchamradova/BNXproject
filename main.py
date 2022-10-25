@@ -13,7 +13,7 @@ from src.Exception.EndOfBNXFileException import EndOfBNXFileException
 
 if __name__ == '__main__':
 
-    s = SNRAnalyzer()
+    '''s = SNRAnalyzer()
     s.getBNXSNRStats('files/bnx/4QVZ_ScanRange_1-1_filtered.filtered.bnx')
     s.getImageSNRStats('files/images/B1_CH2_C001.png')
     s.getImageSNRStatsForMolecules('files/bnx/4QVZ_ScanRange_1-1_filtered.filtered.bnx','files/images/B1_CH2_C001.png')
@@ -23,7 +23,7 @@ if __name__ == '__main__':
                                             'files/images/B1_CH2_C001.png')
     exit()
 
-    '''
+    
     na = NoiseAnalyzer('files/images/B1_CH2_C001.png')
     na.getFullValuesCounts()
     na.getFOVValuesCounts()
@@ -58,6 +58,9 @@ if __name__ == '__main__':
     exit()'''
 
     validityChecker = ValidityChecker()
+    validityChecker.getImageToFileStatistics("files/bnx/4QVZ_ScanRange_1-1_filtered.filtered.bnx",
+                                             "files/images/B1_CH2_C001.png")
+    exit()
     # validityChecker.getFileToImageStatistics("files/bnx/4QVZ_ScanRange_1-1_filtered.filtered.bnx","files/images/B1_CH2_C001.png", 1, 0)
     # validityChecker.getFileToImageStatisticsValidityComparedByRanges("files/bnx/4QVZ_ScanRange_1-1_filtered.filtered.bnx", "files/images/B1_CH2_C001.png", 5, 500, 50)
     validityChecker.getFileToImageStatisticsValidityComparedByLowerBounds(

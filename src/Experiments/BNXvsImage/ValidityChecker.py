@@ -159,9 +159,11 @@ class ValidityChecker:
                     break
                 count += 1
 
-                pixelValuesOnLine = imageAnalyzer.getPixelValuesOnMoleculeLine(molecule)
+                #pixelValuesOnLine, pixelPositions = imageAnalyzer.getPotentialMarksOnMolecule(molecule, lowerBound)
+                pixelValuesOnLine, pixelPositions = imageAnalyzer.getPixelValuesOnMoleculeLine(molecule)
 
                 maximaMarksCount = len(LocalMaximaHelper.getLocalMaximaInList(pixelValuesOnLine, lowerBound))
+                #maximaMarksCount=len(pixelPositions)
                 bnxMarksCount = len(imageAnalyzer.getFluorescentMarkValuesBiggerThan(molecule, lowerBound))
                 lengthDifference = abs(bnxMarksCount - maximaMarksCount)
                 lengthDifferenceSum += lengthDifference
