@@ -1,4 +1,5 @@
 import os
+import re
 
 class BNXFilesystem:
 
@@ -20,3 +21,8 @@ class BNXFilesystem:
     @staticmethod
     def getBNXByScan(scan):
         return BNXFilesystem.directory + 'scans/_Scan' + str(f'{scan:02}') + '.bnx'
+    @staticmethod
+    def getScanByBNX(path):
+        directory, filename = os.path.split(path)
+        scan = re.findall(r'\d+', filename)
+        return int(scan[0])

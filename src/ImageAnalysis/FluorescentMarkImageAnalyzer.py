@@ -23,7 +23,7 @@ class FluorescentMarkImageAnalyzer:
     #shape s=square c=circle
     def getSurroundingValues(self, x: int, y: int, width: int, shape='s'):
         matrixWidth = 2 * width + 1
-        surroundings = np.zeros((matrixWidth, matrixWidth))
+        surroundings = np.zeros((matrixWidth, matrixWidth), dtype=int)
         startingX = x - width
         startingY = y - width
         for i in range(matrixWidth):

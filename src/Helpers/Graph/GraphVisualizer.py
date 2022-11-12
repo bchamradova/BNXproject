@@ -78,3 +78,26 @@ class GraphVisualizer:
             plt.xlabel('column id')
             plt.ylabel('mean value')
         plt.show()
+
+    @staticmethod
+    def showLinePlot(x, y, xtitle, ytitle, label=''):
+        plt.plot(x, y)
+        plt.xlabel(xtitle)
+        plt.ylabel(ytitle)
+        plt.ylabel(ytitle)
+        plt.title(label)
+        plt.show()
+
+    @staticmethod
+    def plotSymmetricRatios(sideRatios, midRatios, axis):
+        counts, bins = np.histogram(sideRatios)
+        plt.hist(bins[:-1], bins, weights=counts)
+        plt.xlabel(axis + ' sides ratio')
+        plt.ylabel('count')
+        plt.show()
+        counts, bins = np.histogram(midRatios)
+        plt.hist(bins[:-1], bins, weights=counts)
+        plt.xlabel(axis +' mid to side ratio')
+        plt.ylabel('count')
+        plt.show()
+
