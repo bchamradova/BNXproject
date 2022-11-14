@@ -10,8 +10,10 @@ class ImageFilesystem:
 
     @staticmethod
     def getFirstImage():
-        return ImageFilesystem.getImageByNumberAndChannel(2,1)
+        return ImageFilesystem.getImageByScanAndRunAndColumn(1,1,1)
 
     @staticmethod
-    def getImageByNumberAndChannel(channel, number):
-        return ImageFilesystem.directory + 'B1_CH' + str(channel) + '_C' + str(f'{number:03}') +  '.tiff'
+    def getImageByScanAndRunAndColumn(scan, runId, column, channel = 2):
+        #total 4 banks, each has 2 runIds -> see readme
+        bank = (runId % 8) // 2
+        return ImageFilesystem.directory + str(scan) + '/' + 'B' + str(bank) + '_CH' + str(channel) + '_C' + str(f'{column:03}') +  '.tiff'
