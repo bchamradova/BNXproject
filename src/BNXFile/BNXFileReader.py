@@ -36,13 +36,12 @@ class BNXFileReader:
         return molecule
 
     def getMoleculeFromLine(self, line: str) -> Molecule:
-        lineAttributes = self.parseLine(line)
-        length = int(lineAttributes[2])
-        moleculeAttributes = [int(attribute) for attribute in lineAttributes[-6:]]
+        moleculeAttributes = self.parseLine(line)
+        length = int(moleculeAttributes[2])
         # todo hint object
-        return Molecule(length, moleculeAttributes[0], moleculeAttributes[1], moleculeAttributes[2],
-                        moleculeAttributes[3],
-                        moleculeAttributes[4], moleculeAttributes[5])
+        return Molecule(int(length), int(moleculeAttributes[13]), int(moleculeAttributes[14]),
+                        int(moleculeAttributes[15]), int(moleculeAttributes[16]), int(moleculeAttributes[17]),
+                        int(moleculeAttributes[18]), int(moleculeAttributes[11]), int(moleculeAttributes[12]))
 
     def getFluorescentMarkDistancesFromLine(self, line: str):
         lineAttributes = self.parseLine(line)

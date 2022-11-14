@@ -8,7 +8,7 @@ class Molecule:
     FOV_DIMENSION = 2048
     PIXEL_TO_NUCLEOTIDE_RATIO = 375
 
-    def __init__(self, moleculeLength: int, startFOV: int, startX: int, startY: int, endFOV: int, endX: int, endY: int):
+    def __init__(self, moleculeLength: int, startFOV: int, startX: int, startY: int, endFOV: int, endX: int, endY: int, runID: int, column: int):
 
         self.moleculeLength = moleculeLength
 
@@ -18,6 +18,8 @@ class Molecule:
         self.endFOV = endFOV
         self.endX = endX
         self.endY = endY
+        self.runId = runID
+        self.column = column
 
         # only molecules with same startFOV and endFOV
         self.totalStartY = self.startY + (self.startFOV - 1) * self.FOV_DIMENSION
