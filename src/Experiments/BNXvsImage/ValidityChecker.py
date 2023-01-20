@@ -31,7 +31,7 @@ class ValidityChecker:
                     maxIndices = (i, j)
         return math.sqrt((maxIndices[0] - centerIndex) ** 2 + (maxIndices[1] - centerIndex) ** 2)
 
-    def getFileToImageStatistics(self, BNXFilename: str, imageFilename: str, closeSurroundings=3, minValue=0):
+    def getFileToImageStatistics(self, BNXFilename: str, imageFilename: str, closeSurroundings=3, minValue=0, useLine = False):
         fileReader = BNXFileReader(BNXFilename)
         fileReader.open()
 
@@ -45,7 +45,7 @@ class ValidityChecker:
 
         while True:
             try:
-                molecule = fileReader.getNextMolecule()
+                molecule = fileReader.getNextMolecule(useLine)
             except EndOfBNXFileException:
                 break
 

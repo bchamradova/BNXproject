@@ -20,7 +20,7 @@ class BNXFileReader:
         # print("actual data starting at line: " + str(lineCounter))
         self.filePointer.seek(lastLine)
 
-    def getNextMolecule(self) -> Molecule:
+    def getNextMolecule(self, useLine = True) -> Molecule:
         moleculeLine = self.filePointer.readline()
         if not moleculeLine:
             raise EndOfBNXFileException("nothing more to read")
@@ -31,7 +31,7 @@ class BNXFileReader:
         intensities = self.getFloatsFromLine(intensitiesLine)
         SNRsLine = self.filePointer.readline()
         SNRs = self.getFloatsFromLine(SNRsLine)
-        molecule.createFluorescentMarksFromArray(fluorescentMarks, SNRs, intensities)
+        molecule.createFluorescentMarksFromArray(fluorescentMarks, SNRs, intensities, useLine)
 
         return molecule
 
