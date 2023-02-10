@@ -3,6 +3,7 @@ import numpy as np
 
 from src.BNXFile.BNXFileReader import BNXFileReader
 from src.Experiments.SNR.SNRAnalyzer import SNRAnalyzer
+from src.Filesystem.BNXFilesystem import BNXFilesystem
 from src.ImageAnalysis.FluorescentMarkImageAnalyzer import FluorescentMarkImageAnalyzer
 from src.ImageAnalysis.NoiseAnalyzer import NoiseAnalyzer
 from src.Experiments.NormalizedImage.NormalizedImageChecker import NormalizedImageChecker
@@ -12,6 +13,10 @@ from src.Exception.EndOfBNXFileException import EndOfBNXFileException
 
 
 if __name__ == '__main__':
+    br =BNXFileReader(BNXFilesystem.getBNXByScan(1))
+    br.open()
+    br.prepareDatasetEA(1)
+    exit()
 
     '''s = SNRAnalyzer()
     s.getBNXSNRStats('files/bnx/4QVZ_ScanRange_1-1_filtered.filtered.bnx')
