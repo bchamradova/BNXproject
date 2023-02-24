@@ -3,6 +3,8 @@ import math
 from src.BNXFile.BNXFileReader import BNXFileReader
 from src.Exception.EndOfBNXFileException import EndOfBNXFileException
 from src.FileToImageResult import FileToImageResultWithBounds, FileToImageResultWithRanges
+from src.Filesystem.BNXFilesystem import BNXFilesystem
+from src.Filesystem.ImageFilesystem import ImageFilesystem
 from src.ImageAnalysis.FluorescentMarkImageAnalyzer import FluorescentMarkImageAnalyzer
 from src.Helpers.Graph.GraphVisualizer import GraphVisualizer
 from src.Helpers.LocalMaximaHelper import LocalMaximaHelper
@@ -31,7 +33,8 @@ class ValidityChecker:
                     maxIndices = (i, j)
         return math.sqrt((maxIndices[0] - centerIndex) ** 2 + (maxIndices[1] - centerIndex) ** 2)
 
-    def getFileToImageStatistics(self, BNXFilename: str, imageFilename: str, closeSurroundings=3, minValue=0, useLine = False):
+    def getFileToImageStatistics(self, BNXFilename: str, imageFilename: str, closeSurroundings=3, minValue=0,
+                                 useLine=False):
         fileReader = BNXFileReader(BNXFilename)
         fileReader.open()
 
@@ -159,11 +162,11 @@ class ValidityChecker:
                     break
                 count += 1
 
-                #pixelValuesOnLine, pixelPositions = imageAnalyzer.getPotentialMarksOnMolecule(molecule, lowerBound)
+                # pixelValuesOnLine, pixelPositions = imageAnalyzer.getPotentialMarksOnMolecule(molecule, lowerBound)
                 pixelValuesOnLine, pixelPositions = imageAnalyzer.getPixelValuesOnMoleculeLine(molecule)
 
                 maximaMarksCount = len(LocalMaximaHelper.getLocalMaximaInList(pixelValuesOnLine, lowerBound))
-                #maximaMarksCount=len(pixelPositions)
+                # maximaMarksCount=len(pixelPositions)
                 bnxMarksCount = len(imageAnalyzer.getFluorescentMarkValuesBiggerThan(molecule, lowerBound))
                 lengthDifference = abs(bnxMarksCount - maximaMarksCount)
                 lengthDifferenceSum += lengthDifference
@@ -183,3 +186,73 @@ class ValidityChecker:
             print("max difference: " + str(maxLengthDifference))
             print("average difference: " + str(lengthDifferenceSum / count))
             print("same length count: " + str(sameLengthCount) + " of total: " + str(count))
+
+    def getFileToImageStatisticsByScan(self, scan, filterValue=0, surroundingsSize=3, useLineForMolecule=True):
+        fileReader = BNXFileReader(BNXFilesystem.getBNXByScan(scan))
+        fileReader.open()
+        filename = ''
+        c = correctCount = incorrectCount = 0
+
+        while True:
+            try:
+                molecule = fileReader.getNextMolecule(useLineForMolecule)
+            except EndOfBNXFileException:
+                break
+            print(c)
+            c += 1
+            if c % 100 != 0:
+                continue
+
+
+            currentFilename = ImageFilesystem.getImageByScanAndRunAndColumn(scan, molecule.runId, molecule.column)
+            if currentFilename != filename:
+                filename = currentFilename
+                imageAnalyzer = FluorescentMarkImageAnalyzer(filename)
+
+            if not (molecule.startFOV == molecule.endFOV):
+                continue
+
+            for fluorescentMark in molecule.fluorescentMarks:
+                values = imageAnalyzer.getFluorescentMarkSurroundingValues(fluorescentMark, surroundingsSize)
+
+                if imageAnalyzer.getPixelValue(fluorescentMark.posX, fluorescentMark.posY) < filterValue:
+                    continue
+
+                if self.checkMaximumInCenter(values):
+                    correctCount += 1
+                else:
+                    incorrectCount += 1
+
+        return correctCount, incorrectCount
+
+    def getImageToFileStatisticsForScan(self, scan, filterValue=0):
+        fileReader = BNXFileReader(BNXFilesystem.getBNXByScan(scan))
+        fileReader.open()
+        filename = ''
+        c = correctCount = incorrectCount = 0
+
+        while True:
+            try:
+                molecule = fileReader.getNextMolecule()
+            except EndOfBNXFileException:
+                break
+            c += 1
+
+            currentFilename = ImageFilesystem.getImageByScanAndRunAndColumn(scan, molecule.runId, molecule.column)
+            if currentFilename != filename:
+                filename = currentFilename
+                imageAnalyzer = FluorescentMarkImageAnalyzer(filename)
+
+            pixelValuesOnLine, pixelPositions = imageAnalyzer.getPixelValuesOnMoleculeLine(molecule)
+
+            maximaMarksCount = len(LocalMaximaHelper.getLocalMaximaInList(pixelValuesOnLine, filterValue))
+            bnxMarksCount = len(imageAnalyzer.getFluorescentMarkValuesBiggerThan(molecule, filterValue))
+
+            lengthDifference = maximaMarksCount - bnxMarksCount
+
+            if lengthDifference == 0:
+                correctCount += 1
+            else:
+                incorrectCount += 1
+
+        return correctCount, incorrectCount
