@@ -69,6 +69,15 @@ class Molecule:
             print(str(self.endFOV) + " " + str(self.startFOV))
             return False
 
+    def getDistancesBetweenMarks(self):
+        distances = []
+        for i,mark in enumerate(self.fluorescentMarks):
+            if i == 0:
+                continue
+            distances.append(mark.nucleotideDistance -self.fluorescentMarks[i-1].nucleotideDistance)
+        return distances
+
+
     def __str__(self) -> str:
         marksString = ""
         for mark in self.fluorescentMarks:
