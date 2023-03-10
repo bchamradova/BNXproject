@@ -1,3 +1,4 @@
+import csv
 import math
 
 from src.BNXFile.BNXFileReader import BNXFileReader
@@ -12,9 +13,8 @@ from src.Helpers.LocalMaximaHelper import LocalMaximaHelper
 
 class ValidityChecker:
 
-    def checkMaximumInCenter(self, surroundingPixelValues):
+    def checkMaximumInCenter(self, surroundingPixelValues, centerRadius = 0):
         centerIndex = int(len(surroundingPixelValues) / 2)
-        centerRadius = 1
         maxValue = (max(map(max, surroundingPixelValues)))
         for i in range(centerIndex - centerRadius, centerIndex + centerRadius + 1):
             for j in range(centerIndex - centerRadius, centerIndex + centerRadius + 1):
@@ -213,10 +213,10 @@ class ValidityChecker:
                 continue
 
             for fluorescentMark in molecule.fluorescentMarks:
-                values = imageAnalyzer.getFluorescentMarkSurroundingValues(fluorescentMark, surroundingsSize)
-
                 if imageAnalyzer.getPixelValue(fluorescentMark.posX, fluorescentMark.posY) < filterValue:
                     continue
+
+                values = imageAnalyzer.getFluorescentMarkSurroundingValues(fluorescentMark, surroundingsSize)
 
                 if self.checkMaximumInCenter(values):
                     correctCount += 1
@@ -225,34 +225,95 @@ class ValidityChecker:
 
         return correctCount, incorrectCount
 
-    def getImageToFileStatisticsForScan(self, scan, filterValue=0):
+    def getImageToFileStatisticsForScan(self, scan, filterValue=0, surroundingsSize=3, useLineForMolecule=True):
         fileReader = BNXFileReader(BNXFilesystem.getBNXByScan(scan))
         fileReader.open()
         filename = ''
         c = correctCount = incorrectCount = 0
-
+        diffs = []
         while True:
             try:
-                molecule = fileReader.getNextMolecule()
+                molecule = fileReader.getNextMolecule(True) #using line for fluorescent mark retrieval is faster and the count is the same for both options
             except EndOfBNXFileException:
                 break
             c += 1
+            if c % 100 != 0:
+                continue
+            print(c)
 
             currentFilename = ImageFilesystem.getImageByScanAndRunAndColumn(scan, molecule.runId, molecule.column)
             if currentFilename != filename:
                 filename = currentFilename
                 imageAnalyzer = FluorescentMarkImageAnalyzer(filename)
 
-            pixelValuesOnLine, pixelPositions = imageAnalyzer.getPixelValuesOnMoleculeLine(molecule)
+            if useLineForMolecule:
+                pixelValuesOnLine, pixelPositions = imageAnalyzer.getPixelValuesOnMoleculeLine(molecule)
+                maximaMarksCount = len(LocalMaximaHelper.getLocalMaximaInList(pixelValuesOnLine, filterValue))
 
-            maximaMarksCount = len(LocalMaximaHelper.getLocalMaximaInList(pixelValuesOnLine, filterValue))
+            else:
+                potentialMarks, potentialMarksPositions = imageAnalyzer.getPotentialMarksOnMolecule(molecule, filterValue, surroundingsSize)
+                maximaMarksCount = len(potentialMarks)
+
             bnxMarksCount = len(imageAnalyzer.getFluorescentMarkValuesBiggerThan(molecule, filterValue))
 
-            lengthDifference = maximaMarksCount - bnxMarksCount
-
+            lengthDifference = maximaMarksCount - bnxMarksCount if bnxMarksCount != 0 else None
+            diffs.append(lengthDifference)
             if lengthDifference == 0:
                 correctCount += 1
             else:
                 incorrectCount += 1
 
+        return correctCount, incorrectCount, diffs
+
+    def getImageToFileStatisticsWithCoordinatesCheck(self, scan, filterValue=0, surroundingsSize=3, useLineForMolecule=True):
+        fileReader = BNXFileReader(BNXFilesystem.getBNXByScan(scan))
+        fileReader.open()
+        filename = ''
+        c = correctCount = incorrectCount = 0
+        while True:
+            try:
+                molecule = fileReader.getNextMolecule(useLineForMolecule)  # using line for fluorescent mark retrieval is faster and the count is the same for both options
+            except EndOfBNXFileException:
+                break
+            c += 1
+            if c % 100 != 0:
+                continue
+            print(c)
+
+            currentFilename = ImageFilesystem.getImageByScanAndRunAndColumn(scan, molecule.runId, molecule.column)
+            if currentFilename != filename:
+                filename = currentFilename
+                imageAnalyzer = FluorescentMarkImageAnalyzer(filename)
+
+            if useLineForMolecule:
+                potentialMarks = []
+                potentialMarksPositions = []
+                lineValues, linePositions = imageAnalyzer.getPixelValuesOnMoleculeLine(molecule)
+                for i,linePos in enumerate(linePositions):
+                    if lineValues[i]>filterValue and self.checkMaximumInCenter(imageAnalyzer.getSurroundingValues(linePos[0], linePos[1], surroundingsSize)):
+                        potentialMarks.append(lineValues[i])
+                        potentialMarksPositions.append(linePos)
+
+            else:
+                potentialMarks, potentialMarksPositions = imageAnalyzer.getPotentialMarksOnMolecule(molecule,filterValue,surroundingsSize)
+
+            moleculeMarksPositions = [coords.getCoordinates() for coords in molecule.fluorescentMarks]
+
+            for pos in potentialMarksPositions:
+                if pos in moleculeMarksPositions:
+                    correctCount += 1
+                else:
+                    incorrectCount += 1
+
         return correctCount, incorrectCount
+
+if __name__ == '__main__':
+    vc = ValidityChecker()
+
+    for i in range(100,1100,100):
+        for line in [False]:
+            for surroundings in [1,2,3]:
+                correct, incorrect = vc.getImageToFileStatisticsWithCoordinatesCheck(1, filterValue=i, surroundingsSize=surroundings,useLineForMolecule=line)
+                with open('results_imageToFileCoords_max_scan1', 'a') as file:
+                    wr = csv.writer(file)
+                    wr.writerow([correct, incorrect, i, surroundings, line])

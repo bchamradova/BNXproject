@@ -2,7 +2,9 @@ import sys
 
 from PIL import Image
 import numpy as np
-import scipy.ndimage
+import scipy.ndimage as ndimage
+
+from src.Filesystem.ImageFilesystem import ImageFilesystem
 from src.Helpers.MatrixHelper import MatrixHelper
 from src.Model.Molecule import Molecule
 from src.Model.FluorescentMark import FluorescentMark
@@ -90,12 +92,12 @@ class FluorescentMarkImageAnalyzer:
 
         return curveValues
 
-    def getPotentialMarksOnMolecule(self, molecule, lowerBound=0, border = 0):
-        width = abs(molecule.endX - molecule.startX) + 1 + 2*border
-        height = abs(molecule.totalEndY - molecule.totalStartY) + 1 + 2*border
+    def getPotentialMarksOnMolecule(self, molecule, lowerBound=0, surroundings=3, border=0):
+        width = abs(molecule.endX - molecule.startX) + 1 + 2 * border
+        height = abs(molecule.totalEndY - molecule.totalStartY) + 1 + 2 * border
         startX = molecule.startX if molecule.startX < molecule.endX else molecule.endX - border
         endX = molecule.endX if molecule.startX < molecule.endX else molecule.startX
-
+        np.set_printoptions(threshold=sys.maxsize)
         moleculeCutout = np.zeros((height, width), dtype=np.uint64)
         moleculePositions = np.zeros((height, width), dtype='i,i')
         for x in range(width):
@@ -106,14 +108,15 @@ class FluorescentMarkImageAnalyzer:
                     continue
                 moleculeCutout[y][x] = self.getPixelValue(posX, posY)
                 moleculePositions[y][x] = (posX, posY)
-        np.set_printoptions(threshold=sys.maxsize)
-        mx = scipy.ndimage.maximum_filter(moleculeCutout, size=(width*2+1, 3))
-        #todo same line one value
-        marksFiltered = np.where((mx == moleculeCutout) & (mx>lowerBound), moleculeCutout, 0)
-        nonZero = list(zip(*np.nonzero(marksFiltered)))
 
-        positions = np.array([moleculePositions[pos[0]][pos[1]] for pos in nonZero])
-        marks = np.array([marksFiltered[pos[0]][pos[1]] for pos in nonZero])
+        #surroundings should be based on bnx file (around 10 pixels)
+        maxima = ndimage.maximum_filter(moleculeCutout, size=(surroundings*2+1, width)) #apply max filter (mask)
+        maximaFiltered = np.where((maxima == moleculeCutout) & (maxima > lowerBound), moleculeCutout, 0) #filter small values
+        potentialMarks = np.where((maximaFiltered > 0) & (maximaFiltered == maximaFiltered.max(axis=1, keepdims=True))) #choose the biggest for each row
+        positions = list(zip(potentialMarks[1], potentialMarks[0])) #get coordinates
+        marks = np.array([moleculeCutout[pos[1]][pos[0]] for pos in positions])
+        #print(moleculeCutout)
+        #print(positions)
+        #print(marks)
 
-        return marks, positions
-
+        return marks, [(pos[0] + startX, pos[1] + molecule.totalStartY) for pos in positions]
