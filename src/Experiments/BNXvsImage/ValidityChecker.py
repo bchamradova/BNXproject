@@ -1,5 +1,6 @@
 import csv
 import math
+import pandas as pd
 
 from src.BNXFile.BNXFileReader import BNXFileReader
 from src.Exception.EndOfBNXFileException import EndOfBNXFileException
@@ -306,6 +307,39 @@ class ValidityChecker:
                     incorrectCount += 1
 
         return correctCount, incorrectCount
+
+    def createDatasetWithMatchingIntensities(self, scan):
+        fileReader = BNXFileReader(BNXFilesystem.getBNXByScan(scan))
+        fileReader.open()
+        filename = ''
+        columns = ['bnx_intensity',
+                'bnx_snr',
+                'intensity',
+                'x',
+                'y',
+                'fov',
+                'scan',
+                'run',
+                'column']
+        res = []
+        while True:
+            try:
+                molecule = fileReader.getNextMolecule(
+                    False)  # using line for fluorescent mark retrieval is faster and the count is the same for both options
+            except EndOfBNXFileException:
+                df = pd.DataFrame(res, columns=columns)
+                df.to_csv('imageIntensities_noLine' + str(scan) + '.csv')
+                print(df)
+                return df
+
+            currentFilename = ImageFilesystem.getImageByScanAndRunAndColumn(scan, molecule.runId, molecule.column)
+            if currentFilename != filename:
+                filename = currentFilename
+                imageAnalyzer = FluorescentMarkImageAnalyzer(filename)
+
+            for mark in molecule.fluorescentMarks:
+                res.append([mark.BNXIntensity, mark.SNR, imageAnalyzer.getPixelValue(mark.posX, mark.posY), mark.posX, mark.posY, molecule.startFOV,scan,molecule.runId, molecule.column ])
+
 
 if __name__ == '__main__':
     vc = ValidityChecker()
