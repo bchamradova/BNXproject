@@ -1,21 +1,27 @@
 import time
 from PIL import Image
 
+from src.BNXFile.BNXFileReader import BNXFileReader
+from src.Filesystem.BNXFilesystem import BNXFilesystem
+from src.Filesystem.ImageFilesystem import ImageFilesystem
 from src.Helpers.Graph.GraphVisualizer import GraphVisualizer
 from src.Model.Molecule import Molecule
 from scipy.stats import norm
+import numpy as np
 
 
 class NoiseAnalyzer:
     IMAGE_WIDTH = 1024
     IMAGE_HEIGHT = 8192
-    LIMIT = 300
+    LIMIT = 250
 
-    def __init__(self, filename):
+    def __init__(self, filename, full=True):
         self.imageFilename = filename
-        self.imagePixelValues = self.getAllPixelValuesIndexed()
+        if full:
+            self.imagePixelValues = self.getAllPixelValuesIndexed()
 
     def getAllPixelValues(self):
+        return np.asarray(Image.open(self.imageFilename)).flatten()
         image = Image.open(self.imageFilename)
         values = []
         for x in range(self.IMAGE_WIDTH):
@@ -128,3 +134,21 @@ class NoiseAnalyzer:
         mu, std = norm.fit([pixel for pixel in self.imagePixelValues[row] if pixel < NoiseAnalyzer.LIMIT])
         # print(str(mean))
         return mu, std
+
+    def getMoleculeMeanAndDeviation(self, molecule, noiseThreshold = 200):
+        im = Image.open(self.imageFilename)
+        moleculeCutout = im.crop((
+                                 molecule.startX if molecule.startX < molecule.endX else molecule.endX, molecule.totalStartY,
+                                 molecule.endX+1 if molecule.endX > molecule.startX else molecule.startX +1, molecule.totalEndY+1))
+        noiseValues = np.asarray(moleculeCutout).flatten()
+        underThreshold = np.where(noiseValues < noiseThreshold)
+
+        return np.mean(noiseValues[underThreshold]),np.std(noiseValues[underThreshold])
+
+
+if __name__== '__main__':
+    na = NoiseAnalyzer(ImageFilesystem.getFirstImage(), full=False)
+    bnxReader = BNXFileReader(BNXFilesystem.getFirstBNX())
+    bnxReader.open()
+    mol = bnxReader.getNextMolecule()
+    print(na.getMoleculeMeanAndDeviation(mol,250))
