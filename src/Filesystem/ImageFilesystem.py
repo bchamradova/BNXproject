@@ -2,6 +2,9 @@ import math
 import os
 import re
 
+COLUMN_RUN_IDENTIFIER = 70
+
+
 class ImageFilesystem:
 
     directory = os.path.dirname(__file__) + '/../../files/images/converted/'
@@ -35,5 +38,5 @@ class ImageFilesystem:
         bank = int(fileNumbers[0])
         channel = int(fileNumbers[1])
         column = int(fileNumbers[2])
-        run = (scan-1)*8 + bank * 2 - 0.5
+        run = (scan-1)*8 + bank * 2 - 1 if column < COLUMN_RUN_IDENTIFIER else (scan-1)*8 + bank * 2
         return scan,run, column
