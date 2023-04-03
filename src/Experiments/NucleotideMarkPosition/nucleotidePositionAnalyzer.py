@@ -1,7 +1,10 @@
+import csv
+
 from src import constants
 from src.BNXFile.BNXFileReader import BNXFileReader
 from src.Exception.EndOfBNXFileException import EndOfBNXFileException
-from src.Helpers.LocalMaximaHelper import LocalMaximaHelper
+from src.Filesystem.BNXFilesystem import BNXFilesystem
+from src.Filesystem.ImageFilesystem import ImageFilesystem
 from src.ImageAnalysis.FluorescentMarkImageAnalyzer import FluorescentMarkImageAnalyzer
 import numpy as np
 
@@ -27,40 +30,45 @@ def getCountOfNotCentered(nucleotidePositions):
 
     return count
 
+def getPositionsForScan(scan):
+    fileReader = BNXFileReader(BNXFilesystem.getBNXByScan(scan))
+    fileReader.open()
+    filename = ''
+    results = ['calculatedY', 'expectedY', 'calculatedX', 'shape']
 
-if __name__ == '__main__':
-
-    # [x for x in signal.argrelextrema(nick_signal, np.greater)[0] if nick_signal[x] >= median*snr]
-    imageAnalyzer = FluorescentMarkImageAnalyzer(
-        'C:\\Users\\blank\\Documents\\7. semestr\\semestrální projektk\\BNXproject\\files\\images\\B1_CH2_C001.png')
-    reader = BNXFileReader(
-        'C:\\Users\\blank\\Documents\\7. semestr\\semestrální projektk\\BNXproject\\files\\bnx\\4QVZ_ScanRange_1-1_filtered.filtered.bnx')
-    reader.open()
-    surroundingsSize = 3
-    maxCounts = np.zeros(surroundingsSize, dtype=np.uint8)
-    sum = np.zeros(surroundingsSize, dtype=np.uint8)
+    c = 0
     while True:
         try:
-            molecule = reader.getNextMolecule()
+            molecule = fileReader.getNextMolecule(
+                False)
         except EndOfBNXFileException:
             break
+        c += 1
+        if c % 1000 != 0:
+            continue
+        print(c)
 
-        values, positions = imageAnalyzer.getPotentialMarksOnMolecule(molecule)
+        currentFilename = ImageFilesystem.getImageByScanAndRunAndColumn(scan, molecule.runId, molecule.column)
+        if currentFilename != filename:
+            filename = currentFilename
+            ia = FluorescentMarkImageAnalyzer(filename)
 
-        nupos = np.empty((surroundingsSize,), dtype=object)
-        nupos[...]=[[] for _ in range(surroundingsSize)]
-        for index,potentialMark in enumerate(positions):
+        for mark in molecule.fluorescentMarks:
+            surroundingValues = ia.getSurroundingValues(mark.posX, mark.posY, 1, shape='c')
+            centerOfMass = getCenterOfMass(surroundingValues, 1)
+            results.append([centerOfMass[0], mark.nucleotideDistance, centerOfMass[1], 'c'])
+            surroundingValues = ia.getSurroundingValues(mark.posX, mark.posY, 1, shape='s')
+            centerOfMass = getCenterOfMass(surroundingValues, 1)
+            results.append([centerOfMass[0], mark.nucleotideDistance, centerOfMass[1], 's'])
+    with open('results/centerOfMass_full_scan_1.csv', 'a') as file:
+        wr = csv.writer(file)
+        for row in results:
+            wr.writerow(row)
+    return results
 
-            for i in range(1,surroundingsSize+1):
-                surroundingValues = imageAnalyzer.getSurroundingValues(potentialMark[0], potentialMark[1], i, shape='c')
-                nupos[i-1].append(getCenterOfMass(surroundingValues, i))
 
-        for i in range(surroundingsSize):
-            outOfCenterCount = getCountOfNotCentered(nupos[i])
-            sum[i] += outOfCenterCount
-            if outOfCenterCount > maxCounts[i]:
-                maxCounts[i]=outOfCenterCount
-
-    print(maxCounts, sum)
+if __name__ == '__main__':
+    getPositionsForScan(1)
+    print(getCenterOfMass([[0,0,0],[0,0,1],[0,0,0]]))
     # porovnat maxima molekul s ch1 souborem
     # udelat na x symetrickou masku a udelat z toho filtr ktery se pak da aplikovat na najiti posunu
