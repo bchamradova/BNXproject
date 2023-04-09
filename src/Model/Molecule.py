@@ -9,7 +9,9 @@ class Molecule:
     FOV_DIMENSION = 2048
     PIXEL_TO_NUCLEOTIDE_RATIO = 375
 
-    def __init__(self, moleculeLength: int, startFOV: int, startX: int, startY: int, endFOV: int, endX: int, endY: int, runID: int, column: int):
+    # MoleculeId	Length	AvgIntensity	SNR	NumberofLabels	OriginalMoleculeId	ScanNumber	ScanDirection	ChipId	Flowcell	RunId	Column	StartFOV	StartX	StartY	EndFOV	EndX	EndY
+    def __init__(self, moleculeLength: int, startFOV: int, startX: int, startY: int, endFOV: int, endX: int, endY: int,
+                 runID: int, column: int):
 
         self.moleculeLength = moleculeLength
 
@@ -21,6 +23,19 @@ class Molecule:
         self.endY = endY
         self.runId = runID
         self.column = column
+        self.id = None
+        self.avgIntensity = None
+        self.SNR = None
+        self.originalMoleculeId = None
+        self.scanNumber = None
+        self.scanDirection = None
+        self.chipId = None
+        self.flowcell = None
+
+        self.fluorescentMarksDistances = []
+        self.fluorescentMarkIntensities = []
+        self.fluorescentMarkSNRs = []
+        self.numberOfLabels = None
 
         # only molecules with same startFOV and endFOV
         self.totalStartY = self.startY + (self.startFOV - 1) * self.FOV_DIMENSION
@@ -77,7 +92,22 @@ class Molecule:
             distances.append(mark.nucleotideDistance -self.fluorescentMarks[i-1].nucleotideDistance)
         return distances
 
+    def addFluorescentMarksArrays(self, distances, intensities, SNRs):
+        self.fluorescentMarksDistances = distances
+        self.fluorescentMarkIntensities = intensities
+        self.fluorescentMarkSNRs = SNRs
+        self.numberOfLabels = len(distances)
 
+    def createBNXRecord(self):
+        moleculeRow = constants.MOLECULE_ROW_IDENTIFIER + '\t'.join(map(str, [
+            self.id,    self.moleculeLength,    self.avgIntensity,    self.SNR,    self.numberOfLabels,    self.originalMoleculeId,    self.scanNumber,
+            self.scanDirection,    self.chipId,    self.flowcell,    self.runId,    self.column,    self.startFOV,
+            self.startX,    self.startY,    self.endFOV,    self.endX, self.endY
+        ]))
+        distancesRow = constants.DISTANCES_ROW_IDENTIFIER + '\t'.join(map(str, self.fluorescentMarksDistances))
+        intensitiesRow = constants.INTENSITIES_ROW_IDENTIFIER + '\t'.join(map(str, self.fluorescentMarkIntensities))
+        SNRsRow = constants.SNRS_ROW_IDENTIFIER + '\t'.join(map(str, self.fluorescentMarkSNRs))
+        return moleculeRow + '\n' + distancesRow + '\n' + intensitiesRow + '\n' + SNRsRow + '\n'
     def __str__(self) -> str:
         marksString = ""
         for mark in self.fluorescentMarks:
