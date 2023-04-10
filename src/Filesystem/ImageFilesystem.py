@@ -27,13 +27,12 @@ class ImageFilesystem:
         #each scan has 8 runs -> scan = run/8 -> check input
         if (math.ceil(runId / 8) != scan):
             raise Exception('scan doesnt match runId o.o')
-        return ImageFilesystem.directory + str(scan) + '/' + 'B' + str(bank) + '_CH' + str(channel) + '_C' + str(f'{column:03}') +  '.tiff'
+        return ImageFilesystem.directory + str(scan) + '/' +'channel' + str(channel) + '/B' + str(bank) + '_CH' + str(channel) + '_C' + str(f'{column:03}') +  '.tiff'
 
     @staticmethod
     def getScanAndRunAndColumnFromPath(path):
         directory, filename = os.path.split(path)
-        directory, scan = os.path.split(directory)
-        scan = int(scan)
+        scan = int(directory[directory.find(ImageFilesystem.directory)+len(ImageFilesystem.directory):directory.rfind('/channel')])
         fileNumbers = re.findall(r'\d+', filename)
         bank = int(fileNumbers[0])
         channel = int(fileNumbers[1])
