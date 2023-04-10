@@ -1,0 +1,9 @@
+
+#0h	LabelChannel	MoleculeId	Length	AvgIntensity	SNR	NumberofLabels	OriginalMoleculeId	ScanNumber	ScanDirection	ChipId	Flowcell	RunId	Column	StartFOV	StartX	StartY	EndFOV	EndX	EndY
+#0f	int	int	int	float	float	int	int	int	int	string	int	int	int	int	int	int	int	int	int
+#1h	LabelChannel	LabelPosition[N]
+#1f	int	int
+#Qh	QualityScoreID	QualityScores[N]
+#Qf	string	float
+# Quality Score QX11: SNR for channel 1
+# Quality Score QX12: Intensity for channel 1
