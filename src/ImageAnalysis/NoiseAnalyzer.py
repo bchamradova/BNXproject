@@ -15,19 +15,13 @@ class NoiseAnalyzer:
     IMAGE_HEIGHT = 8192
     LIMIT = 250
 
-    def __init__(self, filename, full=True):
+    def __init__(self, filename, full=False):
         self.imageFilename = filename
         if full:
             self.imagePixelValues = self.getAllPixelValuesIndexed()
 
     def getAllPixelValues(self):
         return np.asarray(Image.open(self.imageFilename)).flatten()
-        image = Image.open(self.imageFilename)
-        values = []
-        for x in range(self.IMAGE_WIDTH):
-            for y in range(self.IMAGE_HEIGHT):
-                values.append(image.getpixel((x, y)))
-        return values
 
     def getPixelValuesInRange(self, xFrom: int, xTo: int, yFrom: int, yTo: int):
         image = Image.open(self.imageFilename)
@@ -40,10 +34,11 @@ class NoiseAnalyzer:
     def getAllPixelValuesIndexed(self):
         start = time.time()
         image = Image.open(self.imageFilename)
-        values = [[0 for _ in range(self.IMAGE_WIDTH)] for _ in range(self.IMAGE_HEIGHT)]
-        for x in range(self.IMAGE_WIDTH):
+        #values = [[0 for _ in range(self.IMAGE_WIDTH)] for _ in range(self.IMAGE_HEIGHT)]
+        '''for x in range(self.IMAGE_WIDTH):
             for y in range(self.IMAGE_HEIGHT):
-                values[y][x] = (image.getpixel((x, y)))
+                values[y][x] = (image.getpixel((x, y)))'''
+        values = np.asarray(image)
         # print(np.matrix(values))
         print('read image in ' + str(time.time() - start))
         return values
@@ -79,15 +74,17 @@ class NoiseAnalyzer:
 
     def getDeviation(self):
         values = self.getAllPixelValues()
-        mu, std = norm.fit([pixel for pixel in values if pixel < NoiseAnalyzer.LIMIT])
-        return std
+        belowThreshold = values[values<self.LIMIT]
+        mu = np.mean(belowThreshold)
+        std = np.std(belowThreshold)
+        return std,mu
 
     def getColumnValuesMeans(self):
         means = []
         for column in range(self.IMAGE_WIDTH):
             means.append(self.getColumnMeanAndDeviation(column)[0])
-        graphVisualizer = GraphVisualizer()
-        graphVisualizer.showMeansValues(means, column=1)
+        #graphVisualizer = GraphVisualizer()
+        #graphVisualizer.showMeansValues(means, column=1)
         return means
 
     def getRowValuesMeans(self):
@@ -102,16 +99,16 @@ class NoiseAnalyzer:
         deviations = []
         for column in range(self.IMAGE_WIDTH):
             deviations.append(self.getColumnMeanAndDeviation(column)[1])
-        graphVisualizer = GraphVisualizer()
-        graphVisualizer.showMeansValues(deviations, column=1)
+        #graphVisualizer = GraphVisualizer()
+        #graphVisualizer.showMeansValues(deviations, column=1)
         return deviations
 
     def getRowValuesDeviations(self):
         deviations = []
         for row in range(self.IMAGE_HEIGHT):
             deviations.append(self.getRowMeanAndDeviation(row)[1])
-        graphVisualizer = GraphVisualizer()
-        graphVisualizer.showMeansValues(deviations, column=0)
+        #graphVisualizer = GraphVisualizer()
+        #graphVisualizer.showMeansValues(deviations, column=0)
         return deviations
 
     def getColumnMeanAndDeviation(self, column):

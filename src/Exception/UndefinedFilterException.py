@@ -1,0 +1,2 @@
+class UndefinedFilterException(Exception):
+    pass
