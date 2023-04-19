@@ -12,6 +12,7 @@ from src.Filesystem.ImageFilesystem import ImageFilesystem
 from src.ImageAnalysis.FluorescentMarkImageAnalyzer import FluorescentMarkImageAnalyzer
 from src.Helpers.Graph.GraphVisualizer import GraphVisualizer
 from src.Helpers.LocalMaximaHelper import LocalMaximaHelper
+from src.ImageAnalysis.MoleculeDetector import MoleculeDetector
 import argparse
 
 from src.ImageAnalysis.GaussianFilteredImageAnalyzer import GaussianFilteredImageAnalyzer
@@ -355,6 +356,63 @@ class ValidityChecker:
 
             for mark in molecule.fluorescentMarks:
                 res.append([mark.BNXIntensity, mark.SNR, imageAnalyzer.getPixelValue(mark.posX, mark.posY), mark.posX, mark.posY, molecule.startFOV,scan,molecule.runId, molecule.column ])
+
+    @staticmethod
+    def checkMolecules(imageFilenames):
+        allowedDistance = 5
+        pairDistances = []
+        pixelDistances = []
+        found = notFound = 0
+        for imageFilename in imageFilenames:
+            scan, run, column = ImageFilesystem.getScanAndRunAndColumnFromPath(imageFilename)
+            bnxReader = BNXFileReader(BNXFilesystem.getBNXByScan(scan))
+            bnxReader.open()
+            BNXmolecules = []
+
+            while True:
+                try:
+                    molecule = bnxReader.getNextMolecule()
+                except EndOfBNXFileException:
+                    break
+                if molecule.runId == run and molecule.column == column:
+                    BNXmolecules.append((molecule.startX, molecule.totalStartY, molecule.endX, molecule.totalEndY))
+            detectedMolecules = MoleculeDetector.detectMoleculeCoordinates(imageFilename)
+
+            BNXmolecules = np.array(BNXmolecules)
+            detectedMolecules = np.array([(x1, y1, x2, y2) for ((x1, y1), (x2, y2)) in detectedMolecules])
+
+            BNXlineCenters = (BNXmolecules[:, :2] + BNXmolecules[:, 2:]) / 2.0
+            detectedLineCenters = (detectedMolecules[:, :2] + detectedMolecules[:, 2:]) / 2.0
+
+            pairs = []
+            alreadyPairedBNX = set()
+            bestBNXDistances = [math.inf] * len(BNXmolecules)
+
+            for detectedIndex in range(len(detectedMolecules)):
+                minDist = math.inf
+                bestMatchIndex = None
+                for moleculeIndex in range(len(BNXmolecules)):
+                    distance = math.dist(detectedLineCenters[detectedIndex], BNXlineCenters[moleculeIndex])
+                    if distance < minDist and distance < allowedDistance:
+                        if moleculeIndex not in alreadyPairedBNX or distance < bestBNXDistances[moleculeIndex]:
+                            minDist = distance
+                            bestMatchIndex = moleculeIndex
+                if bestMatchIndex is not None:
+                    pairs.append((detectedIndex, bestMatchIndex))
+                    pixelDistances.append((abs(detectedMolecules[detectedIndex] - BNXmolecules[bestMatchIndex])))
+                    pairDistances.append(minDist)
+                    alreadyPairedBNX.add(bestMatchIndex)
+                    bestBNXDistances[bestMatchIndex] = minDist
+                    found += 1
+                else:
+                    pairs.append((detectedIndex, None))
+                    notFound += 1
+
+        print(pairDistances[pairDistances is not None])
+        print('precision: ', found / (found + notFound))
+        print('average pixel distance: ', np.mean(pixelDistances))
+        print('average center distance: ', np.mean(pairDistances))
+        return pixelDistances, pairDistances
 
 
 if __name__ == '__main__':
