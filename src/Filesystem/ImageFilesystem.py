@@ -2,6 +2,8 @@ import math
 import os
 import re
 
+from src.Exception.ImageDoesNotExist import ImageDoesNotExist
+
 COLUMN_RUN_IDENTIFIER = 70
 
 
@@ -26,8 +28,12 @@ class ImageFilesystem:
         bank = math.ceil((runId % 8) / 2) if runId % 8 != 0 else 4
         #each scan has 8 runs -> scan = run/8 -> check input
         if (math.ceil(runId / 8) != scan):
-            raise Exception('scan doesnt match runId o.o')
-        return ImageFilesystem.directory + str(scan) + '/' +'channel' + str(channel) + '/B' + str(bank) + '_CH' + str(channel) + '_C' + str(f'{column:03}') +  '.tiff'
+            raise Exception('scan doesnt match runId')
+        imagePath =  ImageFilesystem.directory + str(scan) + '/' +'channel' + str(channel) + '/B' + str(bank) + '_CH' + str(channel) + '_C' + str(f'{column:03}') +  '.tiff'
+        if os.path.exists(imagePath):
+            return imagePath
+        else:
+            raise ImageDoesNotExist(imagePath)
 
     @staticmethod
     def getScanAndRunAndColumnFromPath(path):

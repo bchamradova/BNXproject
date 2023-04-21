@@ -1,3 +1,5 @@
+import re
+
 from src import constants
 from src.Model.Molecule import Molecule
 from src.Exception.EndOfBNXFileException import EndOfBNXFileException
@@ -9,16 +11,21 @@ class BNXFileReader:
 
     def __init__(self, filename: str, ignoreDifferentFOV=True):
         self.filename = filename
-        # todo
         self.ignoreDifferentFOV = ignoreDifferentFOV
 
     def open(self) -> None:
         self.filePointer = open(self.filename, "r")
         lineCounter = 0
         lastLine = 0
-        while self.filePointer.readline()[0] == "#":
-            lineCounter += 1
-            lastLine = self.filePointer.tell()
+        while True:
+            line = self.filePointer.readline()
+            if line[0] == "#":
+                lineCounter += 1
+                lastLine = self.filePointer.tell()
+                if line.startswith('# Number of Molecules:'):
+                    self.moleculeCount = int(re.findall(r'\d+', line)[0])
+            else:
+                break
         # print("actual data starting at line: " + str(lineCounter))
         self.filePointer.seek(lastLine)
 

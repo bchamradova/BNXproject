@@ -3,7 +3,6 @@ import numpy as np
 from src import constants
 from PIL import Image
 import skimage.measure
-
 from src.Filesystem.ImageFilesystem import ImageFilesystem
 from src.Helpers.PositionHelper import PositionHelper
 from src.Model.Molecule import Molecule
@@ -20,11 +19,9 @@ class MoleculeDetector:
         for slice in slices:
             height, width = slice[0].stop - slice[0].start, slice[1].stop - slice[1].start
             if height >= constants.MOLECULE_MIN_HEIGHT:
-                col_start, col_stop = slice[0].start, slice[0].stop
-                row_start, row_stop = slice[1].start, slice[1].stop
-                top_left = (row_start, col_start)
-                bottom_right = (row_stop - 1, col_stop - 1)
-                coordinates.append((top_left, bottom_right))
+                startY, endY = slice[0].start, slice[0].stop
+                startX, stopY = slice[1].start, slice[1].stop
+                coordinates.append(((startX, startY), (stopY - 1, endY - 1)))
         return coordinates
 
     @staticmethod

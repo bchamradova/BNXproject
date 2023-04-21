@@ -25,19 +25,20 @@ class FluorescentMarkImageAnalyzer:
 
     def getPixelValue(self, x: int, y: int) -> int:
         return self.image.getpixel((x, y))
+
     #shape s=square c=circle
     def getSurroundingValues(self, x: int, y: int, width: int, shape='s'):
         matrixWidth = 2 * width + 1
-        surroundings = np.zeros((matrixWidth, matrixWidth), dtype=int)
         startingX = x - width
         startingY = y - width
-        for i in range(matrixWidth):
-            for j in range(matrixWidth):
-                try:
-                    surroundings[i][j] = self.getPixelValue(startingX + j, startingY + i)
-                except IndexError:
-                    surroundings[i][j] = 0
-        if shape== 's':
+
+        x, y = np.meshgrid(
+            np.arange(startingX, startingX + matrixWidth),
+            np.arange(startingY, startingY + matrixWidth))
+
+        surroundings = np.array([int(self.getPixelValue(xi, yi)) for xi, yi in zip(x.flat, y.flat)]).reshape(matrixWidth, matrixWidth)
+
+        if shape == 's':
             return surroundings
         else:
             return MatrixHelper.getCircularValuesFromMatrix(surroundings)
@@ -78,12 +79,9 @@ class FluorescentMarkImageAnalyzer:
 
     def getPixelValuesOnMoleculeLine(self, molecule):
         coordinatesOnLine = molecule.lineEquation.getPointsFromStartToEnd()
-        pixelValuesOnLine = []
-        positions = []
-        for point in coordinatesOnLine:
-            pixelValuesOnLine.append(self.getPixelValue(point[0], point[1]))
-            positions.append((point[0], point[1]))
-        return pixelValuesOnLine, positions
+        x, y = zip(*coordinatesOnLine)
+        pixelValuesOnLine = np.array([self.getPixelValue(x[i], y[i]) for i in range(len(coordinatesOnLine))])
+        return pixelValuesOnLine, coordinatesOnLine
 
     def getInterpolatedPixelValuesOnMoleculeLine(self, molecule):
         coordinatesOnLine = molecule.lineEquation.getPointsFromStartToEnd()
@@ -118,15 +116,11 @@ class FluorescentMarkImageAnalyzer:
         potentialMarks = np.where((maximaFiltered > 0) & (maximaFiltered == maximaFiltered.max(axis=1, keepdims=True))) #choose the biggest for each row
         positions = list(zip(potentialMarks[1], potentialMarks[0])) #get coordinates
         marks = np.array([moleculeCutout[pos[1]][pos[0]] for pos in positions])
-        #print(moleculeCutout)
-        #print(positions)
-        #print(marks)
 
         return marks, [(pos[0] + startX, pos[1] + molecule.totalStartY) for pos in positions]
 
     def detectMarksOnMolecule(self, molecule, lowerBound=0, surroundings=3):
         intensities, positions = self.getPotentialMarksOnMolecule(molecule, lowerBound, surroundings)
-        #distances = [constants.PIXEL_TO_NUCLEOTIDE_RATIO * (molecule.totalStartY + pos[1]) for pos in positions]
         marksCount = len(positions)
         distances = np.zeros(marksCount, dtype='int')
         SNRs = np.zeros(marksCount, dtype='float')

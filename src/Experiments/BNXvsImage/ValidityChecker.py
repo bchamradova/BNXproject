@@ -2,6 +2,7 @@ import csv
 import math
 import pandas as pd
 import numpy as np
+import progressbar
 
 from src.BNXFile.BNXFileReader import BNXFileReader
 from src.Exception.EndOfBNXFileException import EndOfBNXFileException
@@ -32,8 +33,6 @@ class ValidityChecker:
     def checkMaximumInCenter(self, surroundingPixelValues, centerRadius = 0):
         centerIndex = int(len(surroundingPixelValues) / 2)
         maxValue = (max(map(max, surroundingPixelValues)))
-        '''if len(surroundingPixelValues[surroundingPixelValues == maxValue]) > 1:
-            return False'''
         for i in range(centerIndex - centerRadius, centerIndex + centerRadius + 1):
             for j in range(centerIndex - centerRadius, centerIndex + centerRadius + 1):
                 if surroundingPixelValues[i][j] == maxValue:
@@ -210,17 +209,17 @@ class ValidityChecker:
         fileReader.open()
         filename = ''
         c = correctCount = incorrectCount = 0
-
+        bar = progressbar.ProgressBar(maxval=fileReader.moleculeCount,widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+        bar.start()
         while True:
             try:
                 molecule = fileReader.getNextMolecule(useLineForMolecule)
             except EndOfBNXFileException:
                 break
-            print(c)
             c += 1
             if c % 100 != 0:
                 continue
-
+            bar.update(c)
 
             currentFilename = ImageFilesystem.getImageByScanAndRunAndColumn(scan, molecule.runId, molecule.column)
             if currentFilename != filename:
@@ -240,7 +239,7 @@ class ValidityChecker:
                     correctCount += 1
                 else:
                     incorrectCount += 1
-
+        bar.finish()
         return correctCount, incorrectCount
 
     def getImageToFileStatisticsForScan(self, scan, filterValue=0, surroundingsSize=3, useLineForMolecule=True):
@@ -288,6 +287,8 @@ class ValidityChecker:
         fileReader.open()
         filename = ''
         c = correctCount = incorrectCount = 0
+        bar = progressbar.ProgressBar(maxval=fileReader.moleculeCount, widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+        bar.start()
         while True:
             try:
                 molecule = fileReader.getNextMolecule(useLineForMolecule)  # using line for fluorescent mark retrieval is faster and the count is the same for both options
@@ -296,7 +297,7 @@ class ValidityChecker:
             c += 1
             if c % 100 != 0:
                 continue
-            print(c)
+            bar.update(c)
 
             currentFilename = ImageFilesystem.getImageByScanAndRunAndColumn(scan, molecule.runId, molecule.column)
             if currentFilename != filename:
@@ -322,7 +323,7 @@ class ValidityChecker:
                     correctCount += 1
                 else:
                     incorrectCount += 1
-
+        bar.finish()
         return correctCount, incorrectCount
 
     def createDatasetWithMatchingIntensities(self, scan):
@@ -342,15 +343,14 @@ class ValidityChecker:
         while True:
             try:
                 molecule = fileReader.getNextMolecule(
-                    False)  # using line for fluorescent mark retrieval is faster and the count is the same for both options
+                    False)
             except EndOfBNXFileException:
                 df = pd.DataFrame(res, columns=columns)
-                df.to_csv('imageIntensities_noLine' + str(scan) + '.csv')
-                print(df)
+                df.to_csv('imageIntensities' + str(scan) + '.csv')
                 return df
 
             currentFilename = ImageFilesystem.getImageByScanAndRunAndColumn(scan, molecule.runId, molecule.column)
-            if currentFilename != filename: #todo sort
+            if currentFilename != filename:
                 filename = currentFilename
                 imageAnalyzer = FluorescentMarkImageAnalyzer(filename)
 
@@ -418,16 +418,18 @@ class ValidityChecker:
 if __name__ == '__main__':
 
     vc = ValidityChecker()
-    '''parser = argparse.ArgumentParser(description='check simmilarity of data in image and bnx file based on selected attributes')
-    parser.add_argument("-d", "--direction", help="direction of processing - 0: file to image, 1: image to file", type=int, default=0)
+    FluorescentMarkImageAnalyzer = MeanFilteredImageAnalyzer
+
+    parser = argparse.ArgumentParser(description='check simmilarity of data in image and bnx file based on selected attributes')
+    parser.add_argument("-d", "--direction", help="direction of processing - 0: file to image, 1: image to file", type=int, default=1)
     parser.add_argument("-s", "--scan",help="number of bnx scan to check",type=int, default=1)
     parser.add_argument("-l", "--line", help="type of mark detection - 1 for line, 0 for maxima",type=int, default=1)
     parser.add_argument("-t", "--threshold", help="minimal value of intensity to take into account", type=int,default=0)
     parser.add_argument("-sr", "--surroundings", help="size of surroundings", type=int,default=3)
-    parser.add_argument("-f", "--filter", help="convolution filter used", type=str,default='',choices=['', 'mean', 'median', 'gauss'])
+    parser.add_argument("-f", "--filter", help="convolution filter used", type=str,default='gauss',choices=['none', 'mean', 'median', 'gauss'])
     args = parser.parse_args()
 
-    if args.filter == '':
+    if args.filter == 'none':
         FluorescentMarkImageAnalyzer = FluorescentMarkImageAnalyzer
     elif args.filter == 'mean':
         FluorescentMarkImageAnalyzer = MeanFilteredImageAnalyzer
@@ -445,19 +447,7 @@ if __name__ == '__main__':
     else:
         correct, incorrect = vc.getImageToFileStatisticsWithCoordinatesCheck(args.scan, filterValue=args.threshold,
                                                                              surroundingsSize=args.surroundings,
-                                                                             useLineForMolecule=args.line)'''
+                                                                             useLineForMolecule=args.line)
 
-    correct, incorrect = vc.getImageToFileStatisticsWithCoordinatesCheck(1, filterValue=0,
-                                                                         surroundingsSize=3,
-                                                                         useLineForMolecule=True)
 
-    print(correct, incorrect)
-
-    '''
-    for i in range(100,1100,100):
-        for line in [False]:
-            for surroundings in [1,2,3]:
-                correct, incorrect = vc.getImageToFileStatisticsWithCoordinatesCheck(1, filterValue=i, surroundingsSize=surroundings,useLineForMolecule=line)
-                with open('results_imageToFileCoords_max_scan1', 'a') as file:
-                    wr = csv.writer(file)
-                    wr.writerow([correct, incorrect, i, surroundings, line])'''
+    print(f'precision for selected arguments is {round(correct/(correct+incorrect), 2)}')

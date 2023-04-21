@@ -1,3 +1,6 @@
+import argparse
+import progressbar
+
 from src import constants
 from src.Exception.UndefinedFilterException import UndefinedFilterException
 from src.Filesystem.ImageFilesystem import ImageFilesystem
@@ -18,7 +21,7 @@ class BNXConverter:
     def convertImage(self, scan, run, column):
         molecules = MoleculeDetector.detectMolecules(scan, run, column)
         imageFilename = ImageFilesystem.getImageByScanAndRunAndColumn(scan, run, column, channel=2)
-        if self.filter == '':
+        if self.filter == 'none':
             imageAnalyzer = FluorescentMarkImageAnalyzer(imageFilename)
         elif self.filter == 'mean':
             imageAnalyzer = MeanFilteredImageAnalyzer(imageFilename)
@@ -29,8 +32,10 @@ class BNXConverter:
         else:
             raise UndefinedFilterException
 
+        bar = progressbar.ProgressBar(maxval=len(molecules), widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+        bar.start()
         for i, molecule in enumerate(molecules):
-            print(i)
+            bar.update(i)
             distances, intensities, SNRs = imageAnalyzer.detectMarksOnMolecule(
                 molecule,
                 self.lowerBound,
@@ -39,6 +44,7 @@ class BNXConverter:
             molecule.addFluorescentMarksArrays(distances, intensities, SNRs)
 
         self.flush(molecules)
+        bar.finish()
 
     def convertScan(self, scan):
         for run in range(1, constants.RUN_COUNT + 1):
@@ -55,8 +61,19 @@ class BNXConverter:
                 file.write(molecule.createBNXRecord())
 
 if __name__ == '__main__':
-    scan = 1
-    run = 7
-    column = 1
-    converter = BNXConverter('filtered_bnx_output.bnx')
+
+    parser = argparse.ArgumentParser(
+        description='convert images with molecules(channel1) and fluorescent marks(channel2) to BNX file')
+    parser.add_argument("-i", "--input", help="input image",type=str,required=True)
+    parser.add_argument("-o", "--output", help="output filename name", type=str, required=True)
+    parser.add_argument("-l", "--line", help="type of mark detection - 1 for line, 0 for maxima", type=int, default=1)
+    parser.add_argument("-t", "--threshold", help="minimal value of intensity to take into account", type=int,
+                        default=0)
+    parser.add_argument("-sr", "--surroundings", help="size of surroundings", type=int, default=3)
+    parser.add_argument("-f", "--filter", help="convolution filter used", type=str, default='gauss',
+                        choices=['none', 'mean', 'median', 'gauss'])
+    args = parser.parse_args()
+
+    converter = BNXConverter(args.output, args.threshold, args.surroundings, args.filter)
+    scan, run, column = ImageFilesystem.getScanAndRunAndColumnFromPath(ImageFilesystem.directory + args.input)
     converter.convertImage(scan, run, column)
