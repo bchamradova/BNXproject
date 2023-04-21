@@ -173,8 +173,6 @@ def getSymmetricRatios(numberOfImages=np.inf, numberOfScans=43, bnx=None):
     return [xMidRatios, xSideRatios, xValues, xRatioCoords], [yMidRatios, ySideRatios, yValues, yRatioCoords]
 
 
-
-
 def checkShiftsForScan(scan, sigmaX, sigmaY, mean, dimension='2'):
     fileReader = BNXFileReader(BNXFilesystem.getBNXByScan(scan))
     fileReader.open()
@@ -197,13 +195,13 @@ def checkShiftsForScan(scan, sigmaX, sigmaY, mean, dimension='2'):
         if currentFilename != filename:
             filename = currentFilename
             ia = FluorescentMarkImageAnalyzer(filename)
-
+        sa = ShiftAnalyzer(sigmaX, sigmaY)
         for mark in molecule.fluorescentMarks:
             mid = ia.getPixelValue(mark.posX, mark.posY)
-            if mid>500:
+            if mid>300:
                 sides = (ia.getPixelValue(mark.posX - 1, mark.posY), ia.getPixelValue(mark.posX + 1, mark.posY))
                 levels = (ia.getPixelValue(mark.posX, mark.posY - 1), ia.getPixelValue(mark.posX, mark.posY + 1))
-                shiftX, shiftY = ShiftAnalyzer.getNucleotideShift2d(sides, levels, mid, sigmaX, sigmaY, mean)
+                shiftX, shiftY = sa.getNucleotideShift2d(sides, levels, mid, sigmaX, sigmaY)
                 calculatedDistance = mark.nucleotideDistance + shiftY #wtf mark.nucleotideDistance%375 + constants.PIXEL_TO_NUCLEOTIDE_RATIO / 2 + shiftY
                 results.append(
                     [mid, sides[0], sides[1], levels[0], levels[1], constants.PIXEL_TO_NUCLEOTIDE_RATIO / 2 + shiftX,
@@ -224,7 +222,5 @@ if __name__ == '__main__':
     SIGMAX = NormalDistribution.getSigmaFromK(NormalDistribution.getK(1.1725, MEAN, DEVIATION))
     SIGMAY = NormalDistribution.getSigmaFromK(NormalDistribution.getK(1.1263, MEAN, DEVIATION))
 
-    #NormalDistribution.plot2DDistribution(SIGMAX, SIGMAY, (0,0))
     checkShiftsForScan(1, SIGMAX, SIGMAY, MEAN)
-    #print(getNucleotideShift2d((379, 445), (1,1), 481, SIGMAX, SIGMAY, MEAN))  # melo by byt 185 poked %37
-    #print(getNucleotideShift(379, 445, 481, SIGMAX))  # 5
+

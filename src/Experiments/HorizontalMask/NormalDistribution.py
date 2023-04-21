@@ -1,10 +1,44 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from scipy.stats import norm, multivariate_normal as mvn
+from scipy.stats import norm
 
 class NormalDistribution:
+    cacheRange = (-3000, 3001)
+    cacheFrequency = 0.001
+    def __init__(self, deviationX, deviationY, cache=True):
+        self.deviationX = deviationX
+        self.deviationY = deviationY
+        self.cache = cache
+        if cache:
+            self.xCdfValues = {}
+            self.xPdfValues = {}
+            self.yCdfValues = {}
+            self.yPdfValues = {}
+
+            for i in range(NormalDistribution.cacheRange[0], NormalDistribution.cacheRange[1]):
+                randomVariable = round(i * NormalDistribution.cacheFrequency,3)
+                self.yCdfValues[randomVariable] = norm.cdf(randomVariable, 0, self.deviationY)
+                self.yPdfValues[randomVariable] = norm.pdf(randomVariable, 0, self.deviationY)
+            for i in range(NormalDistribution.cacheRange[0], NormalDistribution.cacheRange[1]):
+                randomVariable = round(i * NormalDistribution.cacheFrequency,3)
+                self.xCdfValues[randomVariable] = norm.cdf(randomVariable, 0, self.deviationX)
+                self.xPdfValues[randomVariable] = norm.pdf(randomVariable, 0, self.deviationX)
+
+
+    def getCumulativeValueForRangeFromCache(self, range, mean, axis):
+        if axis == 'x':
+            cdfValues = self.xCdfValues
+            pdfValues = self.xPdfValues
+        else:
+            cdfValues = self.yCdfValues
+            pdfValues = self.yPdfValues
+
+        if range[0] == range[1]:
+            return pdfValues[round(range[0] - mean, 3)]
+        return abs(cdfValues[round(range[0] - mean, 3)] - cdfValues[round(range[1] - mean, 3)])
+
     @staticmethod
-    def getSigmaFromK(k, defaultDeviation = 1):
+    def getSigmaFromK(k, defaultDeviation=1):
         return defaultDeviation / k
 
     @staticmethod
@@ -17,13 +51,16 @@ class NormalDistribution:
     def cdf2d(x, y, sigmaX, sigmaY, mean):
         return norm.cdf(x, mean[0], sigmaX) * norm.cdf(y, mean[1], sigmaY)
 
-    @staticmethod
-    def getCumulativeValueForRange2d(rangeX, rangeY, deviationX, deviationY, mean):
+    def getCumulativeValueForRange2d(self, rangeX, rangeY, deviationX, deviationY, mean):
+        if self.cache:
+            xCum = self.getCumulativeValueForRangeFromCache(rangeX, mean[0], axis='x')
+            yCum = self.getCumulativeValueForRangeFromCache(rangeY, mean[1], axis='y')
+            return xCum * yCum
+
         return abs(
-            NormalDistribution.getCumulativeValueForRange(rangeX, deviationX, mean[0]) * NormalDistribution.getCumulativeValueForRange(rangeY, deviationY,
-                                                                                                 mean[1]))
-        # return abs(cdf2d(rangeX[0], rangeY[0], deviationX, deviationY, mean) - cdf2d(rangeX[1], rangeY[1], deviationX,
-        #                                                                             deviationY, mean))
+            self.getCumulativeValueForRange(rangeX, deviationX, mean[0])
+            * self.getCumulativeValueForRange(rangeY, deviationY, mean[1])
+        )
 
     @staticmethod
     def bivariatePdf(x, y, sigmaX, sigmaY):
@@ -97,7 +134,6 @@ class NormalDistribution:
 
     @staticmethod
     def getK(dataMidRatio, mean, sigma):
-        # diferencialni evoluce TODO
         k = 0.01
         kValues = []
         ratios = []
@@ -106,10 +142,8 @@ class NormalDistribution:
         while round(normalDistributionRatio, 3) != round(dataRatio, 3):
             k = k + 0.001
             step = k / 2
-            # midCdf = (norm.cdf(mean + step, mean, sigma) - norm.cdf(mean - step, mean, sigma))
-            midCdf = NormalDistribution.getCumulativeValueForRange((mean + step, mean - step), sigma, mean)
-            # sideCdf = (norm.cdf(mean + step + k, mean, sigma) - norm.cdf(mean + step, mean, sigma))
-            sideCdf =NormalDistribution.getCumulativeValueForRange((mean + step + k, mean + step), sigma, mean)
+            midCdf = abs((norm.cdf(mean + step, mean, sigma) - norm.cdf(mean - step, mean, sigma)))
+            sideCdf = abs((norm.cdf(mean + step + k, mean, sigma) - norm.cdf(mean + step, mean, sigma)))
             normalDistributionRatio = midCdf / sideCdf
             kValues.append(k)
             ratios.append(normalDistributionRatio / dataRatio)

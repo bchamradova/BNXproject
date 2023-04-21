@@ -5,7 +5,6 @@ import numpy as np
 import scipy.ndimage as ndimage
 
 from src.Experiments.HorizontalMask.ShiftAnalyzer import ShiftAnalyzer
-from src.Filesystem.ImageFilesystem import ImageFilesystem
 from src.Helpers.MatrixHelper import MatrixHelper
 from src.Model.Molecule import Molecule
 from src.Model.FluorescentMark import FluorescentMark
@@ -122,13 +121,13 @@ class FluorescentMarkImageAnalyzer:
         marksCount = len(positions)
         distances = np.zeros(marksCount, dtype='int')
         SNRs = np.zeros(marksCount, dtype='float')
+        sa = ShiftAnalyzer(constants.SIGMAX, constants.SIGMAY)
         for i, position in enumerate(positions):
             x,y = position
             sides = self.image.getpixel((x-1,y)), self.image.getpixel((x+1,y)) #has to be from original image!
             levels = self.image.getpixel((x,y-1)), self.image.getpixel((x,y+1))
-            shiftX,shiftY = ShiftAnalyzer.getNucleotideShift2d(
-                sides, levels, self.image.getpixel((x,y)), constants.SIGMAX, constants.SIGMAY, (0,0)
-            )
+            shiftX,shiftY = sa.getNucleotideShift2d(
+                sides, levels, self.image.getpixel((x,y)), constants.SIGMAX, constants.SIGMAY)
             distances[i] =(y - molecule.totalStartY) * constants.PIXEL_TO_NUCLEOTIDE_RATIO + shiftY
             SNRs[i] = round(intensities[i]/constants.NOISE_DEVIATION, 1)
         return distances, intensities, SNRs

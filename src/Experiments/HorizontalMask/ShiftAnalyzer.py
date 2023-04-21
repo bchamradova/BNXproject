@@ -4,8 +4,14 @@ from src.Experiments.HorizontalMask.NormalDistribution import NormalDistribution
 
 
 class ShiftAnalyzer():
-    @staticmethod
-    def getNucleotideShift(left, mid, right, deviation):
+
+    def __init__(self, deviationX, deviationY):
+        self.deviationX = deviationX
+        self.deviationY = deviationY
+        self.normalDistribution = NormalDistribution(self.deviationX, self.deviationY)
+
+
+    def getNucleotideShift(self,left, mid, right, deviation):
         pixelStart = -constants.PIXEL_TO_NUCLEOTIDE_RATIO / 2
         pixelEnd = constants.PIXEL_TO_NUCLEOTIDE_RATIO / 2
         closestDistance = np.inf
@@ -27,8 +33,7 @@ class ShiftAnalyzer():
 
         return closestShift, closestDistance
 
-    @staticmethod
-    def getNucleotideShift2d(sides, levels, mid, deviationX, deviationY, mean):
+    def getNucleotideShift2d(self, sides, levels, mid, deviationX, deviationY):
         closestDistance = np.inf
         closesShiftX = None
         closesShiftY = None
@@ -44,26 +49,26 @@ class ShiftAnalyzer():
                 positionX = shiftX / constants.PIXEL_TO_NUCLEOTIDE_RATIO
                 positionY = shiftY / constants.PIXEL_TO_NUCLEOTIDE_RATIO
                 # mean on sides/levels means that only the specific range for one dimension is checked. but position changes on both
-                leftCdf = NormalDistribution.getCumulativeValueForRange2d((-1.5, -0.5), (positionY, positionY),
+                leftCdf = self.normalDistribution.getCumulativeValueForRange2d((-1.5, -0.5), (positionY, positionY),
                                                                           deviationX,
                                                                           deviationY,
                                                                           (positionX, positionY))
-                rightCdf = NormalDistribution.getCumulativeValueForRange2d((0.5, 1.5), (positionY, positionY),
+                rightCdf = self.normalDistribution.getCumulativeValueForRange2d((0.5, 1.5), (positionY, positionY),
                                                                            deviationX,
                                                                            deviationY,
                                                                            (positionX, positionY))
-                midCdfSide = NormalDistribution.getCumulativeValueForRange2d((-0.5, 0.5), (positionY, positionY),
+                midCdfSide = self.normalDistribution.getCumulativeValueForRange2d((-0.5, 0.5), (positionY, positionY),
                                                                              deviationX, deviationY,
                                                                              (positionX, positionY))
-                midCdfLevel = NormalDistribution.getCumulativeValueForRange2d((positionX, positionX), (-0.5, 0.5),
+                midCdfLevel = self.normalDistribution.getCumulativeValueForRange2d((positionX, positionX), (-0.5, 0.5),
                                                                               deviationX, deviationY,
                                                                               (positionX, positionY))
 
-                upCdf = NormalDistribution.getCumulativeValueForRange2d((positionX, positionX), (-1.5, -0.5),
+                upCdf = self.normalDistribution.getCumulativeValueForRange2d((positionX, positionX), (-1.5, -0.5),
                                                                         deviationX,
                                                                         deviationY,
                                                                         (positionX, positionY))
-                downCdf = NormalDistribution.getCumulativeValueForRange2d((positionX, positionX), (0.5, 1.5),
+                downCdf = self.normalDistribution.getCumulativeValueForRange2d((positionX, positionX), (0.5, 1.5),
                                                                           deviationX,
                                                                           deviationY,
                                                                           (positionX, positionY))
@@ -77,7 +82,5 @@ class ShiftAnalyzer():
                     closestDistance = distance
                     closesShiftX = shiftX
                     closesShiftY = shiftY
-                    # print(midCdf/leftCdf - mid/left)
-                    # print(midCdf/rightCdf- mid/right)
         # print(sides, levels, mid, closesShiftX, closesShiftY, closestDistance)
         return closesShiftX, closesShiftY
