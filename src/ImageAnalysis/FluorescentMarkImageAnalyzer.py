@@ -1,4 +1,3 @@
-import math
 import sys
 
 from PIL import Image
@@ -10,7 +9,6 @@ from src.Filesystem.ImageFilesystem import ImageFilesystem
 from src.Helpers.MatrixHelper import MatrixHelper
 from src.Model.Molecule import Molecule
 from src.Model.FluorescentMark import FluorescentMark
-from src.ImageAnalysis.NoiseAnalyzer import NoiseAnalyzer
 from src import constants
 
 

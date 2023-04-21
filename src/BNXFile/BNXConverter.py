@@ -1,4 +1,6 @@
 import argparse
+import os
+
 import progressbar
 
 from src import constants
@@ -54,7 +56,7 @@ class BNXConverter:
     def flush(self, molecules):
         with open(self.outputFile, 'w') as file:
             file.write('# Number of molecules: ' + str(len(molecules)))
-            with open('bnx_header', 'r') as header:
+            with open(os.path.dirname(__file__)+'/bnx_header', 'r') as header:
                 for line in header:
                     file.write(line)
             for molecule in molecules:
