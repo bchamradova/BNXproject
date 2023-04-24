@@ -1,6 +1,7 @@
 import re
 
 from src import constants
+from src.Filesystem.BNXFilesystem import BNXFilesystem
 from src.Model.Molecule import Molecule
 from src.Exception.EndOfBNXFileException import EndOfBNXFileException
 import pandas as pd
@@ -40,9 +41,15 @@ class BNXFileReader:
         intensities = self.getFloatsFromLine(intensitiesLine)
         SNRsLine = self.filePointer.readline()
         SNRs = self.getFloatsFromLine(SNRsLine)
-        molecule.createFluorescentMarksFromArray(fluorescentMarks, SNRs, intensities, useLine)
+        scan = BNXFilesystem.getScanByBNX(self.filename)
+        molecule.createFluorescentMarksFromArray(fluorescentMarks, SNRs, intensities, scan, useLine)
 
         return molecule
+
+    def skipMolecule(self):
+        for i in range(4):
+            self.filePointer.readline()
+
 
     def getMoleculeFromLine(self, line: str) -> Molecule:
         moleculeAttributes = self.parseLine(line)

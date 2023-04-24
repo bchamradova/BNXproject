@@ -102,7 +102,7 @@ class FluorescentMarkImageAnalyzer:
             for y in range(height):
                 posX = startX + x
                 posY = molecule.totalStartY + y
-                if posX >= 1042 or posY >= 8192:
+                if posX >= constants.IMAGE_WIDTH or posY >= constants.IMAGE_HEIGHT:
                     continue
                 moleculeCutout[y][x] = self.getPixelValue(posX, posY)
                 moleculePositions[y][x] = (posX, posY)
@@ -116,8 +116,22 @@ class FluorescentMarkImageAnalyzer:
 
         return marks, [(pos[0] + startX, pos[1] + molecule.totalStartY) for pos in positions]
 
-    def detectMarksOnMolecule(self, molecule, lowerBound=0, surroundings=3):
-        intensities, positions = self.getPotentialMarksOnMolecule(molecule, lowerBound, surroundings)
+    def getMarksOnLine(self, molecule, filterValue, surroundingsSize):
+        intensities = []
+        positions = []
+        lineValues, linePositions = self.getPixelValuesOnMoleculeLine(molecule)
+        for i, linePos in enumerate(linePositions):
+            surroundings = self.getSurroundingValues(linePos[0], linePos[1], surroundingsSize)
+            if lineValues[i] > filterValue and lineValues[i] == (max(map(max, surroundings))):
+                intensities.append(lineValues[i])
+                positions.append(linePos)
+        return intensities, positions
+
+    def detectMarksOnMolecule(self, molecule, lowerBound=0, surroundings=3, useLine=True):
+        if useLine:
+            intensities, positions = self.getMarksOnLine(molecule, lowerBound, surroundings)
+        else:
+            intensities, positions = self.getPotentialMarksOnMolecule(molecule, lowerBound, surroundings)
         marksCount = len(positions)
         distances = np.zeros(marksCount, dtype='int')
         SNRs = np.zeros(marksCount, dtype='float')
@@ -128,7 +142,7 @@ class FluorescentMarkImageAnalyzer:
             levels = self.image.getpixel((x,y-1)), self.image.getpixel((x,y+1))
             shiftX,shiftY = sa.getNucleotideShift2d(
                 sides, levels, self.image.getpixel((x,y)), constants.SIGMAX, constants.SIGMAY)
-            distances[i] =(y - molecule.totalStartY) * constants.PIXEL_TO_NUCLEOTIDE_RATIO + shiftY
+            distances[i] = max([(y - molecule.totalStartY) * constants.PIXEL_TO_NUCLEOTIDE_RATIO + shiftY,0])
             SNRs[i] = round(intensities[i]/constants.NOISE_DEVIATION, 1)
         return distances, intensities, SNRs
 

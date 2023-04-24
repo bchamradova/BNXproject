@@ -2,6 +2,7 @@ import math
 import os
 import re
 
+from src import constants
 from src.Exception.ImageDoesNotExist import ImageDoesNotExist
 
 COLUMN_RUN_IDENTIFIER = 70
@@ -16,11 +17,11 @@ class ImageFilesystem:
         return (os.path.join(path, name) for path, subdirs, files in os.walk(ImageFilesystem.directory) for name in files)
 
     @staticmethod
-    def yieldAllImagesInScan(scan):
-        return (ImageFilesystem.directory + str(scan) + '/' + image for image in os.listdir(ImageFilesystem.directory + str(scan) + '/'))
+    def yieldAllImagesInScan(scan, channel=2):
+        return (ImageFilesystem.directory + str(scan) + '/' + 'channel' + str(channel) + '/' + image for image in os.listdir(ImageFilesystem.directory + str(scan) + '/' + 'channel' + str(channel) + '/'))
     @staticmethod
     def getFirstImage():
-        return ImageFilesystem.getImageByScanAndRunAndColumn(1,1,1)
+        return ImageFilesystem.getImageByScanAndRunAndColumn(1, 1, 1)
 
     @staticmethod
     def getImageByScanAndRunAndColumn(scan, runId, column, channel = 2):

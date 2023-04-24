@@ -6,6 +6,7 @@ from scipy.stats import norm
 class GraphVisualizer:
 
     def showComparedImageAndBnxValues(self, imageData, bnxData, localMaxima):
+        plt.figure(figsize=(12, 8))
         plt.plot(imageData, linestyle='solid', zorder=1)
         # plt.ylim([0,1000])
         # plt.yticks([0,200,400,600,800,1000])
@@ -13,7 +14,9 @@ class GraphVisualizer:
                                   alpha=0.5, zorder=2)
         bnxMarks = plt.scatter([i for i in range(len(bnxData))], bnxData, marker='x', color='purple', alpha=0.8,
                                zorder=3)
-        plt.legend((localMaxima, bnxMarks), ('local maxima', 'BNX marks position'), loc=2)
+        plt.legend((localMaxima, bnxMarks), ('lokální maxima', 'značky v souboru BNX'), loc=2, fontsize=18)
+        plt.xlabel("Pozice na molekule", fontsize=18)
+        plt.ylabel("Hodnota intenzity", fontsize=18)
         plt.show()
 
     def showComparedInterpolatedValues(self, curveValues, interpolatedValues):

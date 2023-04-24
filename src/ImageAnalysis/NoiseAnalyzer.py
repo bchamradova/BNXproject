@@ -34,10 +34,6 @@ class NoiseAnalyzer:
     def getAllPixelValuesIndexed(self):
         start = time.time()
         image = Image.open(self.imageFilename)
-        #values = [[0 for _ in range(self.IMAGE_WIDTH)] for _ in range(self.IMAGE_HEIGHT)]
-        '''for x in range(self.IMAGE_WIDTH):
-            for y in range(self.IMAGE_HEIGHT):
-                values[y][x] = (image.getpixel((x, y)))'''
         values = np.asarray(image)
         # print(np.matrix(values))
         print('read image in ' + str(time.time() - start))

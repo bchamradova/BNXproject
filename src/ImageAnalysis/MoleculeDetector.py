@@ -35,7 +35,9 @@ class MoleculeDetector:
             endFOV, endY = PositionHelper.getFOVfromY(totalEndY)
             molecule = Molecule((endY-startY)*constants.PIXEL_TO_NUCLEOTIDE_RATIO, startFOV, startX, startY, endFOV, endX, endY, run, column)
             molecule.id = i
-            molecule.avgIntensity = round(np.mean(np.asarray(Image.open(moleculeFilename).crop((startX, startY, endX, endY)))), 1)
+            molecule.avgIntensity = round(np.mean(np.asarray(
+                Image.open(moleculeFilename).crop((startX, totalStartY, endX+1, totalEndY+1))
+            )), 1)
             molecule.SNR = round(molecule.avgIntensity / constants.NOISE_DEVIATION, 1)
             molecule.originalMoleculeId = 0
             molecule.scanNumber = scan

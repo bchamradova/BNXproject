@@ -6,6 +6,7 @@ import progressbar
 
 from src.BNXFile.BNXFileReader import BNXFileReader
 from src.Exception.EndOfBNXFileException import EndOfBNXFileException
+from src.Exception.ImageDoesNotExist import ImageDoesNotExist
 from src.Exception.UndefinedFilterException import UndefinedFilterException
 from src.FileToImageResult import FileToImageResultWithBounds, FileToImageResultWithRanges
 from src.Filesystem.BNXFilesystem import BNXFilesystem
@@ -19,18 +20,16 @@ import argparse
 from src.ImageAnalysis.GaussianFilteredImageAnalyzer import GaussianFilteredImageAnalyzer
 from src.ImageAnalysis.MeanFilteredImageAnalyzer import MeanFilteredImageAnalyzer
 from src.ImageAnalysis.MedianFilteredImageAnalyzer import MedianFilteredImageAnalyzer
-from src.ImageAnalysis.NormalizedImageAnalyzer import NormalizedImageAnalyzer
 
-#definition of image filter used
-#FluorescentMarkImageAnalyzer = FluorescentMarkImageAnalyzer
-#FluorescentMarkImageAnalyzer = MeanFilteredImageAnalyzer
-#FluorescentMarkImageAnalyzer = MedianFilteredImageAnalyzer
-FluorescentMarkImageAnalyzer = GaussianFilteredImageAnalyzer
-#FluorescentMarkImageAnalyzer = BackgroundNormalizedImageAnalyzer
+# definition of image filter used
+# FluorescentMarkImageAnalyzer = FluorescentMarkImageAnalyzer
+# FluorescentMarkImageAnalyzer = MeanFilteredImageAnalyzer
+# FluorescentMarkImageAnalyzer = MedianFilteredImageAnalyzer
+#FluorescentMarkImageAnalyzer = GaussianFilteredImageAnalyzer
 
 class ValidityChecker:
 
-    def checkMaximumInCenter(self, surroundingPixelValues, centerRadius = 0):
+    def checkMaximumInCenter(self, surroundingPixelValues, centerRadius=0):
         centerIndex = int(len(surroundingPixelValues) / 2)
         maxValue = (max(map(max, surroundingPixelValues)))
         for i in range(centerIndex - centerRadius, centerIndex + centerRadius + 1):
@@ -70,11 +69,9 @@ class ValidityChecker:
                 break
 
             if not (molecule.startFOV == molecule.endFOV):
-                # todo move to bnx reader
                 continue
 
             for fluorescentMark in molecule.fluorescentMarks:
-                # todo check molecules interfering
                 values = imageAnalyzer.getFluorescentMarkSurroundingValues(fluorescentMark, closeSurroundings)
 
                 if imageAnalyzer.getPixelValue(fluorescentMark.posX, fluorescentMark.posY) < minValue:
@@ -136,13 +133,13 @@ class ValidityChecker:
         imageAnalyzer = FluorescentMarkImageAnalyzer(imageFilename)
         # imageAnalyzer.open()
 
-        for i in range(5):
+        for i in range(10):
             try:
                 molecule = fileReader.getNextMolecule()
             except EndOfBNXFileException:
                 break
 
-            pixelValuesOnLine = imageAnalyzer.getPixelValuesOnMoleculeLine(molecule)
+            pixelValuesOnLine, coordsOnLine = imageAnalyzer.getPixelValuesOnMoleculeLine(molecule)
             interpolatedPixelValuesOnLine = imageAnalyzer.getInterpolatedPixelValuesOnMoleculeLine(molecule)
 
             gv = GraphVisualizer()
@@ -193,12 +190,6 @@ class ValidityChecker:
                 if lengthDifference == 0:
                     sameLengthCount += 1
 
-                '''print("-                                            -")
-                print(maximaMarksCount)
-                print((self.getLocalMaximaInList(pixelValuesOnLine, lowerBound)))
-                print(bnxMarksCount)
-                print(imageAnalyzer.getFluorescentMarkValuesBiggerThan(molecule, lowerBound))'''
-
             print('bound: ' + str(lowerBound))
             print("max difference: " + str(maxLengthDifference))
             print("average difference: " + str(lengthDifferenceSum / count))
@@ -208,20 +199,28 @@ class ValidityChecker:
         fileReader = BNXFileReader(BNXFilesystem.getBNXByScan(scan))
         fileReader.open()
         filename = ''
+        missingImages = set()
         c = correctCount = incorrectCount = 0
-        bar = progressbar.ProgressBar(maxval=fileReader.moleculeCount,widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+        bar = progressbar.ProgressBar(maxval=fileReader.moleculeCount,
+                                      widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
         bar.start()
         while True:
+            c += 1
+            if c % 100 != 0:
+                fileReader.skipMolecule()
+                continue
             try:
                 molecule = fileReader.getNextMolecule(useLineForMolecule)
             except EndOfBNXFileException:
                 break
-            c += 1
-            if c % 100 != 0:
-                continue
             bar.update(c)
 
-            currentFilename = ImageFilesystem.getImageByScanAndRunAndColumn(scan, molecule.runId, molecule.column)
+            try:
+                currentFilename = ImageFilesystem.getImageByScanAndRunAndColumn(scan, molecule.runId, molecule.column)
+            except ImageDoesNotExist:
+                missingImages.add((molecule.runId, molecule.column))
+                continue
+
             if currentFilename != filename:
                 filename = currentFilename
                 imageAnalyzer = FluorescentMarkImageAnalyzer(filename)
@@ -240,6 +239,7 @@ class ValidityChecker:
                 else:
                     incorrectCount += 1
         bar.finish()
+        print(f'finished scan validity check, but {len(missingImages)} images were missing for scan {scan}')
         return correctCount, incorrectCount
 
     def getImageToFileStatisticsForScan(self, scan, filterValue=0, surroundingsSize=3, useLineForMolecule=True):
@@ -250,7 +250,8 @@ class ValidityChecker:
         diffs = []
         while True:
             try:
-                molecule = fileReader.getNextMolecule(True) #using line for fluorescent mark retrieval is faster and the count is the same for both options
+                molecule = fileReader.getNextMolecule(True)
+                # using line for fluorescent mark retrieval is faster and the count is the same for both options
             except EndOfBNXFileException:
                 break
             c += 1
@@ -268,7 +269,9 @@ class ValidityChecker:
                 maximaMarksCount = len(LocalMaximaHelper.getLocalMaximaInList(pixelValuesOnLine, filterValue))
 
             else:
-                potentialMarks, potentialMarksPositions = imageAnalyzer.getPotentialMarksOnMolecule(molecule, filterValue, surroundingsSize)
+                potentialMarks, potentialMarksPositions = imageAnalyzer.getPotentialMarksOnMolecule(molecule,
+                                                                                                    filterValue,
+                                                                                                    surroundingsSize)
                 maximaMarksCount = len(potentialMarks)
 
             bnxMarksCount = len(imageAnalyzer.getFluorescentMarkValuesBiggerThan(molecule, filterValue))
@@ -282,24 +285,33 @@ class ValidityChecker:
 
         return correctCount, incorrectCount, diffs
 
-    def getImageToFileStatisticsWithCoordinatesCheck(self, scan, filterValue=0, surroundingsSize=3, useLineForMolecule=True):
+    def getImageToFileStatisticsWithCoordinatesCheck(self, scan, filterValue=0, surroundingsSize=3,
+                                                     useLineForMolecule=True):
         fileReader = BNXFileReader(BNXFilesystem.getBNXByScan(scan))
         fileReader.open()
         filename = ''
+        missingImages = set()
         c = correctCount = incorrectCount = 0
-        bar = progressbar.ProgressBar(maxval=fileReader.moleculeCount, widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+        bar = progressbar.ProgressBar(maxval=fileReader.moleculeCount,
+                                      widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
         bar.start()
         while True:
-            try:
-                molecule = fileReader.getNextMolecule(useLineForMolecule)  # using line for fluorescent mark retrieval is faster and the count is the same for both options
-            except EndOfBNXFileException:
-                break
             c += 1
             if c % 100 != 0:
+                fileReader.skipMolecule()
                 continue
+            try:
+                molecule = fileReader.getNextMolecule(useLineForMolecule)
+            except EndOfBNXFileException:
+                break
             bar.update(c)
 
-            currentFilename = ImageFilesystem.getImageByScanAndRunAndColumn(scan, molecule.runId, molecule.column)
+            try:
+                currentFilename = ImageFilesystem.getImageByScanAndRunAndColumn(scan, molecule.runId, molecule.column)
+            except ImageDoesNotExist:
+                missingImages.add((molecule.runId, molecule.column))
+                continue
+
             if currentFilename != filename:
                 filename = currentFilename
                 imageAnalyzer = FluorescentMarkImageAnalyzer(filename)
@@ -308,13 +320,16 @@ class ValidityChecker:
                 potentialMarks = []
                 potentialMarksPositions = []
                 lineValues, linePositions = imageAnalyzer.getPixelValuesOnMoleculeLine(molecule)
-                for i,linePos in enumerate(linePositions):
-                    if lineValues[i]>filterValue and self.checkMaximumInCenter(imageAnalyzer.getSurroundingValues(linePos[0], linePos[1], surroundingsSize)):
+                for i, linePos in enumerate(linePositions):
+                    if lineValues[i] > filterValue and self.checkMaximumInCenter(
+                            imageAnalyzer.getSurroundingValues(linePos[0], linePos[1], surroundingsSize)):
                         potentialMarks.append(lineValues[i])
                         potentialMarksPositions.append(linePos)
 
             else:
-                potentialMarks, potentialMarksPositions = imageAnalyzer.getPotentialMarksOnMolecule(molecule,filterValue,surroundingsSize)
+                potentialMarks, potentialMarksPositions = imageAnalyzer.getPotentialMarksOnMolecule(molecule,
+                                                                                                    filterValue,
+                                                                                                    surroundingsSize)
 
             moleculeMarksPositions = [coords.getCoordinates() for coords in molecule.fluorescentMarks]
 
@@ -324,6 +339,8 @@ class ValidityChecker:
                 else:
                     incorrectCount += 1
         bar.finish()
+        if len(missingImages) != 0:
+            print(f'finished scan validity check, but {len(missingImages)} images were missing for scan {scan}')
         return correctCount, incorrectCount
 
     def createDatasetWithMatchingIntensities(self, scan):
@@ -331,14 +348,14 @@ class ValidityChecker:
         fileReader.open()
         filename = ''
         columns = ['bnx_intensity',
-                'bnx_snr',
-                'intensity',
-                'x',
-                'y',
-                'fov',
-                'scan',
-                'run',
-                'column']
+                   'bnx_snr',
+                   'intensity',
+                   'x',
+                   'y',
+                   'fov',
+                   'scan',
+                   'run',
+                   'column']
         res = []
         while True:
             try:
@@ -355,7 +372,8 @@ class ValidityChecker:
                 imageAnalyzer = FluorescentMarkImageAnalyzer(filename)
 
             for mark in molecule.fluorescentMarks:
-                res.append([mark.BNXIntensity, mark.SNR, imageAnalyzer.getPixelValue(mark.posX, mark.posY), mark.posX, mark.posY, molecule.startFOV,scan,molecule.runId, molecule.column ])
+                res.append([mark.BNXIntensity, mark.SNR, imageAnalyzer.getPixelValue(mark.posX, mark.posY), mark.posX,
+                            mark.posY, molecule.startFOV, scan, molecule.runId, molecule.column])
 
     @staticmethod
     def checkMolecules(imageFilenames):
@@ -418,15 +436,17 @@ class ValidityChecker:
 if __name__ == '__main__':
 
     vc = ValidityChecker()
-    FluorescentMarkImageAnalyzer = MeanFilteredImageAnalyzer
-
-    parser = argparse.ArgumentParser(description='check simmilarity of data in image and bnx file based on selected attributes')
-    parser.add_argument("-d", "--direction", help="direction of processing - 0: file to image, 1: image to file", type=int, default=1)
-    parser.add_argument("-s", "--scan",help="number of bnx scan to check",type=int, default=1)
-    parser.add_argument("-l", "--line", help="type of mark detection - 1 for line, 0 for maxima",type=int, default=1)
-    parser.add_argument("-t", "--threshold", help="minimal value of intensity to take into account", type=int,default=0)
-    parser.add_argument("-sr", "--surroundings", help="size of surroundings", type=int,default=3)
-    parser.add_argument("-f", "--filter", help="convolution filter used", type=str,default='gauss',choices=['none', 'mean', 'median', 'gauss'])
+    parser = argparse.ArgumentParser(
+        description='check simmilarity of data in image and bnx file based on selected attributes')
+    parser.add_argument("-d", "--direction", help="direction of processing - 0: file to image, 1: image to file",
+                        type=int, default=1)
+    parser.add_argument("-s", "--scan", help="number of bnx scan to check", type=int, default=1)
+    parser.add_argument("-l", "--line", help="type of mark detection - 1 for line, 0 for maxima", type=int, default=1)
+    parser.add_argument("-t", "--threshold", help="minimal value of intensity to take into account", type=int,
+                        default=0)
+    parser.add_argument("-sr", "--surroundings", help="size of surroundings", type=int, default=3)
+    parser.add_argument("-f", "--filter", help="convolution filter used", type=str, default='gauss',
+                        choices=['none', 'mean', 'median', 'gauss'])
     args = parser.parse_args()
 
     if args.filter == 'none':
@@ -449,5 +469,4 @@ if __name__ == '__main__':
                                                                              surroundingsSize=args.surroundings,
                                                                              useLineForMolecule=args.line)
 
-
-    print(f'precision for selected arguments is {round(correct/(correct+incorrect), 2)}')
+    print(f'precision for selected arguments is {round(correct / (correct + incorrect), 4)}')

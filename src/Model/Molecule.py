@@ -1,9 +1,11 @@
 from src import constants
+from src.Exception.ImageDoesNotExist import ImageDoesNotExist
 from src.Filesystem.ImageFilesystem import ImageFilesystem
 from src.Model.FluorescentMark import FluorescentMark
 from src.Helpers.LineEquation import LineEquation
 from typing import List
 from PIL import Image
+import numpy as np
 
 class Molecule:
     FOV_DIMENSION = 2048
@@ -48,9 +50,13 @@ class Molecule:
     def addFluorescentMark(self, fluorescentMark: FluorescentMark) -> None:
         self.fluorescentMarks.append(fluorescentMark)
 
-    def createFluorescentMarksFromArray(self, marks, intensities, SNRs, useLine = True) -> None:
+    def createFluorescentMarksFromArray(self, marks, intensities, SNRs, scan, useLine = True) -> None:
+        if not useLine:
+            try:
+                image = np.array(Image.open(ImageFilesystem.getImageByScanAndRunAndColumn(scan, self.runId, self.column)))
+            except ImageDoesNotExist:
+                useLine = True
         for index, nucleotideDistance in enumerate(marks):
-
             pixelDistance = int(nucleotideDistance / constants.PIXEL_TO_NUCLEOTIDE_RATIO)
             if useLine:
                 point = self.lineEquation.getCoordinatesInDistanceFromFirstPoint(pixelDistance)
@@ -61,11 +67,10 @@ class Molecule:
                 fluorescentMark = FluorescentMark(markX, markY, pixelDistance, intensities[index], SNRs[index], nucleotideDistance)
                 self.addFluorescentMark(fluorescentMark)
             else:
-                image = Image.open(ImageFilesystem.getImageByScanAndRunAndColumn(1, self.runId, self.column))
                 maxVal = 0
                 maxX = self.startX
                 for markX in range(self.startX, self.endX+1):
-                    value = image.getpixel((markX, self.totalStartY + pixelDistance))
+                    value = image[self.totalStartY + pixelDistance][markX]
                     if value > maxVal:
                         maxVal = value
                         maxX = markX

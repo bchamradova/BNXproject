@@ -1,6 +1,9 @@
 import os
 import re
 
+from src.Exception.BNXDoesNotExist import BNXDoesNotExist
+
+
 class BNXFilesystem:
 
     directory = os.path.dirname(__file__) + '/../../files/bnx/'
@@ -20,7 +23,11 @@ class BNXFilesystem:
 
     @staticmethod
     def getBNXByScan(scan):
-        return BNXFilesystem.directory + 'scans/_Scan' + str(f'{scan:02}') + '.bnx'
+        filename = BNXFilesystem.directory + 'scans/_Scan' + str(f'{scan:02}') + '.bnx'
+        if os.path.exists(filename):
+            return filename
+        else:
+            raise BNXDoesNotExist(filename)
     @staticmethod
     def getScanByBNX(path):
         directory, filename = os.path.split(path)
