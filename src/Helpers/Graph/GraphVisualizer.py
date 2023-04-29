@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import norm
-
+import scipy
+import scipy.stats as stats
 
 class GraphVisualizer:
 
@@ -103,4 +104,20 @@ class GraphVisualizer:
         plt.xlabel(axis +' mid to side ratio')
         plt.ylabel('count')
         plt.show()
+
+    @staticmethod
+    def plotAiryVsGaussian():
+        fig = plt.figure(figsize=(12, 8))
+        ax = fig.add_subplot(111)
+        x = np.linspace(-10, 10, 1000)
+        airy = 4 * (scipy.special.j1(x) / x) ** 2
+        ax.plot(x, airy)
+        ax.plot(x, stats.norm.pdf(x, 0, 1.2) / np.max(stats.norm.pdf(x, 0, 1.2)))
+        ax.set_xlabel('x')
+        ax.set_ylabel('f(x)')
+        plt.legend(labels=['Airyho disk', 'Gaussova funkce'])
+        ax.xaxis.label.set_fontsize(14)
+        ax.yaxis.label.set_fontsize(14)
+        plt.show()
+
 

@@ -3,7 +3,6 @@ import os
 
 import progressbar
 
-from src import constants
 from src.Exception.ImageDoesNotExist import ImageDoesNotExist
 from src.Exception.UndefinedFilterException import UndefinedFilterException
 from src.Filesystem.ImageFilesystem import ImageFilesystem
@@ -81,12 +80,15 @@ class BNXConverter:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='convert images with molecules(channel1) and fluorescent marks(channel2) to BNX file')
-    parser.add_argument("-i", "--input", help="input image with path including scan (scan/channel/filename.tiff)", type=str, required=True)
+    parser.add_argument("-i", "--input", help="input image with path including scan (scan/channel/filename.tiff)",
+                        type=str, required=True)
     parser.add_argument("-o", "--output", help="output filename", type=str, required=True)
     parser.add_argument("-l", "--line", help="type of mark detection - 1 for line, 0 for maxima", type=int, default=0)
     parser.add_argument("-t", "--threshold", help="minimal value of mark intensity to take into account", type=int,
                         default=0)
-    parser.add_argument("-sr", "--surroundings", help="size of surroundings to look for maxima", type=int, default=3)
+    parser.add_argument("-sr", "--surroundings",
+                        help="size of surroundings to look for local maxima as a radius from center",
+                        type=int, default=3)
     parser.add_argument("-f", "--filter", help="convolution filter used", type=str, default='gauss',
                         choices=['none', 'mean', 'median', 'gauss'])
     args = parser.parse_args()

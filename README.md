@@ -8,9 +8,11 @@ Preferred OS is linux based or WSL for windows.
 
 Data
 -----------
-Data used follow set structure which cannot be changed (see image below). Provided demodata are included to show full functionality of this app and are representing a fraction of actual Bionano Saphyr output data.
+Used data follow set structure which cannot be changed (see image below). 
+![img.png](img.png)
 
-#### Images
+Provided **_demodata_** are included to show full structure of data and also functionality of this app and are representing a fraction of actual Bionano Saphyr output data.
+### Images
 
 To upload custom data, the images have to be converted to TIFF file format. Since original Saphyr images come in JXR file format, 
 script convert.sh can be used to convert files and set them to required structure with using JxrDecApp library for linux.
@@ -18,9 +20,9 @@ script convert.sh can be used to convert files and set them to required structur
 Run
  ```apt-get update apt-get install libjxr-tools``` to install JxrDecApp
 
-Run ```./files/images/raw/convert.sh``` to convert images placed in _files/images/raw_ folder in Saphyr data structure with scan number related to existing directory in _files/images/converted_ as an argument
+Run ```./files/images/raw/convert.sh 1``` to convert images placed in _files/images/raw_ folder in Saphyr data structure with scan number related to existing directory in _files/images/converted_ as an argument (so folder for scan 1 in the example)
 
-#### Bnx files
+### Bnx files
 BNX files have to be placed in _files/bnx/scans_ directory and have to be split to scans using Bionano tool available at 
 https://github.com/bionanogenomics/splitSaphyrBNXByScan and named _Scan01.bnx,... (default output of the tool)
 

@@ -25,7 +25,7 @@ from src.ImageAnalysis.MedianFilteredImageAnalyzer import MedianFilteredImageAna
 # FluorescentMarkImageAnalyzer = FluorescentMarkImageAnalyzer
 # FluorescentMarkImageAnalyzer = MeanFilteredImageAnalyzer
 # FluorescentMarkImageAnalyzer = MedianFilteredImageAnalyzer
-#FluorescentMarkImageAnalyzer = GaussianFilteredImageAnalyzer
+# FluorescentMarkImageAnalyzer = GaussianFilteredImageAnalyzer
 
 class ValidityChecker:
 
@@ -444,7 +444,9 @@ if __name__ == '__main__':
     parser.add_argument("-l", "--line", help="type of mark detection - 1 for line, 0 for maxima", type=int, default=1)
     parser.add_argument("-t", "--threshold", help="minimal value of mark intensity to take into account", type=int,
                         default=0)
-    parser.add_argument("-sr", "--surroundings", help="size of surroundings to look for local maxima", type=int, default=3)
+    parser.add_argument("-sr", "--surroundings",
+                        help="size of surroundings to look for local maxima as a radius from center", type=int,
+                        default=3)
     parser.add_argument("-f", "--filter", help="convolution filter used", type=str, default='gauss',
                         choices=['none', 'mean', 'median', 'gauss'])
     args = parser.parse_args()
